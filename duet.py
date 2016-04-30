@@ -12,7 +12,7 @@ def run():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                sys.exit()
+                sys.exit()            
         clock.tick(60)
         screen.fill((0,0,0))
         Player.update()
