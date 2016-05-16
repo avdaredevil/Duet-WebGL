@@ -1,4 +1,65 @@
-<html><head><title>Duet WebGL - AP</title><script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script><link href="elements.html" rel="import"/><style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning"></style><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Poiret+One|Roboto"/></head><body><style>html,body,head {margin:0;padding:0;border:0;background: #1D1D1D}
-h1,h2,h3 {font-family: "Poiret One";font-weight:200}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0}</style><template id="app" is="dom-bind"><audio src="[[track]]" autoplay="autoplay"></audio><paper-toolbar><h1>Duet</h1><div class="flex"></div><h3>Score: [[score]]</h3></paper-toolbar></template><script>var t = document.querySelector("#app")
+<html><head><title>Duet WebGL - AP</title><script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script><link href="elements.html" rel="import"/><style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning"></style><link rel="stylesheet" async="async" href="https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Poiret+One|Roboto"/><script src="bower_components/phaser/build/phaser.min.js"></script></head><body class="fullbleed"><style>html,body,head {margin:0;padding:0;border:0;background: #1D1D1D;overflow:hidden}
+h1,h2,h3 {font-family: "Poiret One";font-weight:200}
+canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar><h1>Duet</h1><div class="flex"></div><h3>Score: [[score]]</h3></paper-toolbar></template><script>var t = document.querySelector("#app"), game;
 t.score = 0
-t.track = "public/theme.mp3"</script></body></html>
+t.track = "public/theme.mp3"
+t.gameSetup = function(game){}
+t.gameSetup.prototype = {
+    preload: function(){
+        //var disk = new Phaser.Circle(game.world.centerX, , 64)
+        //const g = game.add.graphics(0, 0);
+        //g.lineStyle(0,0xFF0000);
+        //g.drawCircle(game.world.centerX*.8, game.height*.875, 20);
+        //g.endFill();
+        //this.ball = game.add.sprite(g.generateTexture())
+        //ball.beginFill(0x2196F3, 0.5);
+        //ball.drawCircle(game.world.centerX*1.2, game.height*.875, 20);
+        //ball.endFill();
+        //ball.lineStyle(1);
+        //ball.beginFill(0xFFFFFF, 0.5);
+        //ball.drawCircle(game.world.centerX, game.height*.875, game.world.centerX*.2);
+        //ball.endFill();
+        const H_OFFSET = game.height*.875, W_OFFSET = game.world.centerX
+        game.stage.backgroundColor = '#000000'
+        const MakeCircle = (color,hollow,sz) => {
+            sz = sz || 10
+            const bmd = game.add.bitmapData(sz*2, sz*2); // Draw circle 
+            bmd.ctx.fillStyle = color;
+            bmd.ctx.beginPath();
+            bmd.ctx.arc(sz, sz, sz, 0, Math.PI * 2, false);
+            bmd.ctx.closePath();
+            bmd.ctx.fill();return bmd
+        }
+        var graphics = game.add.graphics(W_OFFSET, H_OFFSET);
+        graphics.lineStyle(1, 0x868686);
+        this.disk = graphics.arc(0,0, W_OFFSET*.2, 0, Math.PI*2, false);
+        this.center = game.add.sprite(W_OFFSET, H_OFFSET, MakeCircle('#FFFFF'));
+        this.balls = game.add.group()
+        this.ballX = this.balls.create(W_OFFSET*0.8, H_OFFSET, MakeCircle('#FF0000'));
+        this.ballY = this.balls.create(W_OFFSET*1.2, H_OFFSET, MakeCircle('#2196F3'));
+        //game.add.tween(this.ball).to({
+        //    y: 100
+        //}, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
+    },
+    create: function(){
+        this.cursors = game.input.keyboard.createCursorKeys();
+        const adKey = game.input.keyboard.addKey, kb=Phaser.Keyboard;
+        //adKey(kb.LEFT).onDown.add(this.spinCounter, this)
+        game.add.text(32, 32, 'Animation started', { fill: 'white' });
+        game.scale.pageAlignHorizontally = true;
+        game.scale.pageAlignVertically = true;
+        game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+        //this.disk = game.add.sprite(50, game.height / 2, "spaceship");
+        this.ballX.anchor.set(0.5);       
+        this.ballY.anchor.set(0.5); 
+        game.camera.follow(this.center);      
+    },
+    spinCounter: function(){
+        this.ballX
+    }
+}
+window.onload = function() {
+    game = t.g = new Phaser.Game(640, 960, Phaser.AUTO, "");
+    game.state.add("PlayGame", t.gameSetup);
+    game.state.start("PlayGame");
+}</script></body></html>
