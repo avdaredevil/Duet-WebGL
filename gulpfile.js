@@ -30,7 +30,7 @@ var optimizeHtmlTask = function(src, dest) {
     //.pipe($.if('*.js', babel({presets: ['es2015']})))
     // Concatenate and minify styles
     // In case you are still using useref build blocks
-    .pipe($.if('*.css', $.minifyCss()))
+    .pipe($.if('*.css', $.cleanCss()))
     // Minify any HTML
     .pipe($.if('*.html', $.minifyHtml({
       quotes: true,
@@ -46,16 +46,17 @@ var optimizeHtmlTask = function(src, dest) {
 //=====================================================|
 gulp.task('copy', function() {
     var app = gulp.src([
-        'app/*',
-        '!app/public/elements.html',
+        'app/**/*',
+        '!app/*.pug',
+        '!app/elements.html',
     ], {
         dot: true
-    }).pipe(gulp.dest(dist("public")));
+    }).pipe(gulp.dest(dist()));
 
     // Copy over only the bower_components we need
     // These are things which cannot be vulcanized
     var bower = gulp.src([
-        'bower_components/{webcomponentsjs,promise-polyfill,trianglify,moment}/**/*'
+        'app/bower_components/{webcomponentsjs,promise-polyfill,trianglify,moment}/**/*'
     ]).pipe(gulp.dest(dist('bower_components')));
 
     return merge(app, bower)
@@ -65,11 +66,16 @@ gulp.task('copy', function() {
 });
 gulp.task('images', function() {return imageOptimizeTask(['app/public/**/*.png','app/public/**/*.ico','app/public/**/*.jpg'], dist('public'))});
 gulp.task('html', function() {return optimizeHtmlTask(
-    ['app/*.html'],
+    ['app/*.html','!app/elements.html'],
     dist())
 });
+gulp.task('pug', function() {
+    return gulp.src(["app/*.pug"])
+        .pipe($.pug())
+        .pipe(gulp.dest(dist()))
+})
 gulp.task('vulcanize', function() {
-    return gulp.src('app/public/elements.html')
+    return gulp.src('app/elements.html')
         .pipe(gulp.dest('app/bower_components'))
         .pipe($.vulcanize({
             stripComments: true,
@@ -82,10 +88,13 @@ gulp.task('vulcanize', function() {
             spare: true
         })))
         .pipe(minifyInline())
-        .pipe(gulp.dest(dist('bower_components')))
+        .pipe(gulp.dest(dist()))
         .pipe($.size({title: 'vulcanize'}));
 });
 //=====================================================|
+gulp.task('watch', ()=>{
+    gulp.watch("app/*.pug", ['pug']);
+})
 gulp.task('clean', ()=>{
 	return gulp.src([dist(),'app/bower_components/elements.*'], {read: false})
 		.pipe(clean());
@@ -94,7 +103,7 @@ gulp.task('clean', ()=>{
 gulp.task('default', ['clean'], function(cb) {
     runSequence(
         'copy',
-        ['jade','images', 'vulcanize'],
-        'html'
+        ['pug','images', 'vulcanize'],
+        'html', 'watch',
     cb);
 });

@@ -1,0 +1,24 @@
+html
+    head
+        title Duet WebGL - AP
+        script(src="bower_components/webcomponentsjs/webcomponents-lite.min.js")
+        link(href="elements.html", rel="import")
+        style(is="custom-style",include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning")
+        link(rel="stylesheet",href="https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Poiret+One|Roboto")
+    body
+        style.
+            html,body,head {margin:0;padding:0;border:0;background: #1D1D1D}
+            h1,h2,h3 {font-family: "Poiret One";font-weight:200}
+        style(is="custom-style").
+            paper-toolbar {background-color: transparent;position:absolute;top:0;left:0}
+        template#app(is="dom-bind")
+            audio(src="[[track]]",autoplay)
+            paper-toolbar
+                h1 Duet
+                .flex
+                h3 Score: [[score]]
+            
+        script.
+            var t = document.querySelector("#app")
+            t.score = 0
+            t.track = "public/theme.mp3"
