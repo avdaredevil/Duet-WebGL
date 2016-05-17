@@ -10,6 +10,17 @@
   "keywords": [
     "duet"
   ],
+  "window": {
+    "icon": "icon.ico",
+    "toolbar": false,
+    "frame": false,
+    "width": 400,
+    "height": 700,
+    "position": "center",
+    //"fullscreen":true,
+    "min_width": 400,
+    "min_height": 200
+  },
   "author": "Apoorv Verma [AP] <avdaredevil@gmail.com>",
   "license": "ISC",
   "devDependencies": {

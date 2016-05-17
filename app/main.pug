@@ -93,10 +93,10 @@ html
                     //=MAKE=WALLS================================================|
                     const c = this.config;const W_W = c.W_OFFSET*1.05
                     wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
-                    //wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
-                    //wl.create(0,-30-3*c.PAD, c.MakeRect(W_W,30))
-                    //wl.create(0,-30-4*c.PAD, c.MakeRect(W_W,30))
-                    //wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
+                    wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
+                    wl.create(0,-30-3*c.PAD, c.MakeRect(W_W,30))
+                    wl.create(0,-30-4*c.PAD, c.MakeRect(W_W,30))
+                    wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
                     //===========================================================|
                     game.add.tween(wl.scale).to({
                         x: 1.02, y: 1.02
@@ -111,8 +111,7 @@ html
                 update: function(){
                     const c = this.config
                     if (bs.rotate == "right") {bs.angle += game.speed} else if (bs.rotate == "left") {bs.angle -= game.speed}
-                    game.physics.arcade.collide(this.ballX,wl,this.ballXSplat)
-                    game.physics.arcade.collide(this.ballY,wl,this.ballYSplat)
+                    game.physics.arcade.collide(bs,wl,this.ballSplat)
                     if (wl.children.slice(-1)[0].position.y > c.H_OFFSET && !game.complete) {
                         game.complete = true
                         const tex = game.add.text(0, 0, "You have completed the Level", {font: "40px 'Poiret One'", fill: "#FFFFFF", align: "center"});
@@ -120,17 +119,10 @@ html
                         t.setScore(50)
                         wl.children.forEach(w => w.body.velocity.y = 0)
                     }
-                    console.log(wl.children.slice(-1)[0].position.y)
                 },
-                ballXSplat: function(x,y){
-                    console.log("X Hit")
-                    game.state.start("PlayGame",true,true);
+                ballSplat: function(x,y){
                     y.tint = x.tint
-                },
-                ballYSplat: function(x,y){
-                    console.log("Y Hit")
                     game.state.start("PlayGame",true,true);
-                    y.tint=x.tint
                 },
             }
             window.onload = function() {
