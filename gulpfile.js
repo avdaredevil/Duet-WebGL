@@ -47,17 +47,18 @@ var optimizeHtmlTask = function(src, dest) {
 gulp.task('copy', function() {
     var app = gulp.src([
         'app/**/*',
+        '!app/bower_components',
         '!app/*.pug',
         '!app/elements.html',
     ], {
         dot: true
-    }).pipe(gulp.dest(dist()));
+    }).dist('bower_components').pipe(gulp.dest(dist()));
 
     // Copy over only the bower_components we need
     // These are things which cannot be vulcanized
     var bower = gulp.src([
         'app/bower_components/{webcomponentsjs,promise-polyfill,trianglify,moment}/**/*'
-    ]).pipe(gulp.dest(dist('bower_components')));
+    ]).pipe($.changed(dist('bower_components'))).pipe(gulp.dest(dist('bower_components')));
 
     return merge(app, bower)
         .pipe($.size({
@@ -96,7 +97,7 @@ gulp.task('watch', ()=>{
     gulp.watch("app/*.pug", ['pug']);
 })
 gulp.task('clean', ()=>{
-	return gulp.src([dist(),'app/bower_components/elements.*'], {read: false})
+	return gulp.src(['app/bower_components/elements.*',dist("elements.html")], {read: false})
 		.pipe(clean());
 })
 //=====================================================|
