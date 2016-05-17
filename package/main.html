@@ -1,6 +1,6 @@
 <html><head><title>Duet WebGL - AP</title><script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script><link href="elements.html" rel="import"/><style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning"></style><link rel="stylesheet" async="async" href="https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Poiret+One|Roboto"/><script src="bower_components/phaser/build/phaser.min.js"></script></head><body class="fullbleed"><style>html,body,head {margin:0;padding:0;border:0;background: #1D1D1D;overflow:hidden}
 h1,h2,h3 {font-family: "Poiret One";font-weight:200}
-canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar><h1>Duet</h1><div class="flex"></div><h3>Score: [[score]]</h3></paper-toolbar></template><script>var t = document.querySelector("#app"), game;
+canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar><h1>Duet</h1><div class="flex"></div><h3>Score: [[score]]</h3></paper-toolbar></template><script>var t = document.querySelector("#app"), game,bs;
 t.score = 0
 t.track = "public/theme.mp3"
 t.gameSetup = function(game){}
@@ -34,28 +34,34 @@ t.gameSetup.prototype = {
         graphics.lineStyle(1, 0x868686);
         this.disk = graphics.arc(0,0, W_OFFSET*.2, 0, Math.PI*2, false);
         this.center = game.add.sprite(W_OFFSET, H_OFFSET, MakeCircle('#FFFFF'));
-        this.balls = game.add.group()
-        this.ballX = this.balls.create(W_OFFSET*0.8, H_OFFSET, MakeCircle('#FF0000'));
-        this.ballY = this.balls.create(W_OFFSET*1.2, H_OFFSET, MakeCircle('#2196F3'));
-        //game.add.tween(this.ball).to({
-        //    y: 100
+        this.balls = bs = game.add.group()
+        this.balls.position.set(W_OFFSET, H_OFFSET)
+        this.ballX = this.balls.create(-W_OFFSET*.2-10, -10, MakeCircle('#FF0000'));
+        this.ballY = this.balls.create(W_OFFSET*.2-10, -10, MakeCircle('#2196F3'));
+        //game.add.tween(this.balls).to({
+        //    angle: '+360'
         //}, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
     },
     create: function(){
         this.cursors = game.input.keyboard.createCursorKeys();
-        const adKey = game.input.keyboard.addKey, kb=Phaser.Keyboard;
-        //adKey(kb.LEFT).onDown.add(this.spinCounter, this)
-        game.add.text(32, 32, 'Animation started', { fill: 'white' });
-        game.scale.pageAlignHorizontally = true;
-        game.scale.pageAlignVertically = true;
+        const kb=Phaser.Keyboard;
+        var left = game.input.keyboard.addKey(kb.LEFT)
+        var right = game.input.keyboard.addKey(kb.RIGHT)
+        left.onDown.add(this.spinLeft, this)
+        right.onDown.add(this.spinRight, this)
+        left.onUp.add(this.spinLeftDone, this)
+        right.onUp.add(this.spinRightDone, this)
+        game.scale.pageAlignHorizontally = game.scale.pageAlignVertically = true;
         game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-        //this.disk = game.add.sprite(50, game.height / 2, "spaceship");
-        this.ballX.anchor.set(0.5);       
-        this.ballY.anchor.set(0.5); 
-        game.camera.follow(this.center);      
+        game.speed = 4
+        game.camera.follow(this.center)
     },
-    spinCounter: function(){
-        this.ballX
+    spinLeft: function(){bs.lPressed = !!(bs.rotate = 'left')},
+    spinRight: function(){bs.rPressed = !!(bs.rotate = 'right')},
+    spinRightDone: function(){bs.rPressed = false;bs.rotate = bs.lPressed && 'left'},
+    spinLeftDone: function(){bs.lPressed = false;bs.rotate = bs.rPressed && 'right'},
+    update: function(){
+        if (bs.rotate == "right") {bs.angle += game.speed} else if (bs.rotate == "left") {bs.angle -= game.speed}
     }
 }
 window.onload = function() {

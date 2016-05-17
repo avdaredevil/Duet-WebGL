@@ -20,7 +20,7 @@ html
                 .flex
                 h3 Score: [[score]]
         script.
-            var t = document.querySelector("#app"), game;
+            var t = document.querySelector("#app"), game,bs;
             t.score = 0
             t.track = "public/theme.mp3"
             t.gameSetup = function(game){}
@@ -54,28 +54,34 @@ html
                     graphics.lineStyle(1, 0x868686);
                     this.disk = graphics.arc(0,0, W_OFFSET*.2, 0, Math.PI*2, false);
                     this.center = game.add.sprite(W_OFFSET, H_OFFSET, MakeCircle('#FFFFF'));
-                    this.balls = game.add.group()
-                    this.ballX = this.balls.create(W_OFFSET*0.8, H_OFFSET, MakeCircle('#FF0000'));
-                    this.ballY = this.balls.create(W_OFFSET*1.2, H_OFFSET, MakeCircle('#2196F3'));
-                    //game.add.tween(this.ball).to({
-                    //    y: 100
+                    this.balls = bs = game.add.group()
+                    this.balls.position.set(W_OFFSET, H_OFFSET)
+                    this.ballX = this.balls.create(-W_OFFSET*.2-10, -10, MakeCircle('#FF0000'));
+                    this.ballY = this.balls.create(W_OFFSET*.2-10, -10, MakeCircle('#2196F3'));
+                    //game.add.tween(this.balls).to({
+                    //    angle: '+360'
                     //}, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
                 },
                 create: function(){
                     this.cursors = game.input.keyboard.createCursorKeys();
-                    const adKey = game.input.keyboard.addKey, kb=Phaser.Keyboard;
-                    //adKey(kb.LEFT).onDown.add(this.spinCounter, this)
-                    game.add.text(32, 32, 'Animation started', { fill: 'white' });
-                    game.scale.pageAlignHorizontally = true;
-                    game.scale.pageAlignVertically = true;
+                    const kb=Phaser.Keyboard;
+                    var left = game.input.keyboard.addKey(kb.LEFT)
+                    var right = game.input.keyboard.addKey(kb.RIGHT)
+                    left.onDown.add(this.spinLeft, this)
+                    right.onDown.add(this.spinRight, this)
+                    left.onUp.add(this.spinLeftDone, this)
+                    right.onUp.add(this.spinRightDone, this)
+                    game.scale.pageAlignHorizontally = game.scale.pageAlignVertically = true;
                     game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-                    //this.disk = game.add.sprite(50, game.height / 2, "spaceship");
-                    this.ballX.anchor.set(0.5);       
-                    this.ballY.anchor.set(0.5); 
-                    game.camera.follow(this.center);      
+                    game.speed = 4
+                    game.camera.follow(this.center)
                 },
-                spinCounter: function(){
-                    this.ballX
+                spinLeft: function(){bs.lPressed = !!(bs.rotate = 'left')},
+                spinRight: function(){bs.rPressed = !!(bs.rotate = 'right')},
+                spinRightDone: function(){bs.rPressed = false;bs.rotate = bs.lPressed && 'left'},
+                spinLeftDone: function(){bs.lPressed = false;bs.rotate = bs.rPressed && 'right'},
+                update: function(){
+                    if (bs.rotate == "right") {bs.angle += game.speed} else if (bs.rotate == "left") {bs.angle -= game.speed}
                 }
             }
             window.onload = function() {
