@@ -17,7 +17,6 @@
     "width": 400,
     "height": 700,
     "position": "center",
-    //"fullscreen":true,
     "min_width": 400,
     "min_height": 200
   },

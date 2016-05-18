@@ -22,7 +22,7 @@ html
         script.
             var t = document.querySelector("#app"), game,bs,wl;
             t.score = 0
-            t.track = "public/theme.mp3"
+            t.track = "public/theme.ogg"
             t.round = n => Math.round(n)
             t.setScore = s => {
                 clearInterval(t.curInt)
@@ -98,7 +98,6 @@ html
                     wl.create(0,-30-3*c.PAD, c.MakeRect(W_W,30))
                     wl.create(0,-30-4*c.PAD, c.MakeRect(W_W,30))
                     wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
-                    wl.create(game.width-W_W,-30-6*c.PAD, c.MakeRect(W_W,30))
                     //===========================================================|
                     game.add.tween(wl.scale).to({
                         x: 1.02, y: 1.02

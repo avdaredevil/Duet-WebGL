@@ -52,7 +52,7 @@ gulp.task('copy', function() {
         '!app/elements.html',
     ], {
         dot: true
-    }).dist('bower_components').pipe(gulp.dest(dist()));
+    }).pipe($.changed(dist('bower_components'))).pipe(gulp.dest(dist()));
 
     // Copy over only the bower_components we need
     // These are things which cannot be vulcanized

@@ -2,7 +2,7 @@
 h1,h2,h3 {font-family: "Poiret One";font-weight:200}
 canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar><h1>Duet</h1><div class="flex"></div><h3>Score: [[round(score)]]</h3></paper-toolbar></template><script>var t = document.querySelector("#app"), game,bs,wl;
 t.score = 0
-t.track = "public/theme.mp3"
+t.track = "public/theme.ogg"
 t.round = n => Math.round(n)
 t.setScore = s => {
     clearInterval(t.curInt)
