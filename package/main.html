@@ -56,6 +56,7 @@ t.gameSetup.prototype = {
         const kb=Phaser.Keyboard;
         var left = game.input.keyboard.addKey(kb.LEFT)
         var right = game.input.keyboard.addKey(kb.RIGHT)
+        game.input.keyboard.addKey(kb.r).onDown.add(this.resetGame, this)
         left.onDown.add(this.spinLeft, this)
         right.onDown.add(this.spinRight, this)
         left.onUp.add(this.spinLeftDone, this)
@@ -100,6 +101,7 @@ t.gameSetup.prototype = {
             wl.children.forEach(w => w.body.velocity.y = 0)
         }
     },
+    resetGame: function(){game.state.start("PlayGame",true,true)},
     ballSplat: function(x,y){
         y.tint = x.tint
         game.state.start("PlayGame",true,true);

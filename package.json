@@ -12,7 +12,7 @@
   ],
   "window": {
     "icon": "icon.ico",
-    "toolbar": false,
+    "toolbar": true,
     "frame": false,
     "width": 400,
     "height": 700,

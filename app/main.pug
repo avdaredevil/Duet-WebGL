@@ -76,6 +76,7 @@ html
                     const kb=Phaser.Keyboard;
                     var left = game.input.keyboard.addKey(kb.LEFT)
                     var right = game.input.keyboard.addKey(kb.RIGHT)
+                    game.input.keyboard.addKey(kb.r).onDown.add(this.resetGame, this)
                     left.onDown.add(this.spinLeft, this)
                     right.onDown.add(this.spinRight, this)
                     left.onUp.add(this.spinLeftDone, this)
@@ -97,6 +98,7 @@ html
                     wl.create(0,-30-3*c.PAD, c.MakeRect(W_W,30))
                     wl.create(0,-30-4*c.PAD, c.MakeRect(W_W,30))
                     wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
+                    wl.create(game.width-W_W,-30-6*c.PAD, c.MakeRect(W_W,30))
                     //===========================================================|
                     game.add.tween(wl.scale).to({
                         x: 1.02, y: 1.02
@@ -120,6 +122,7 @@ html
                         wl.children.forEach(w => w.body.velocity.y = 0)
                     }
                 },
+                resetGame: function(){game.state.start("PlayGame",true,true)},
                 ballSplat: function(x,y){
                     y.tint = x.tint
                     game.state.start("PlayGame",true,true);
