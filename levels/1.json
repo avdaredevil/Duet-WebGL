@@ -1,0 +1,11 @@
+{
+    "walls": [
+        {"type": "left"},
+        {"type": "center"},
+        {"type": "left"},
+        {"type": "left"},
+        {"type": "right"},
+        {"type": "spin"}
+    ],
+    "track": "/public/lv1.ogg"
+}

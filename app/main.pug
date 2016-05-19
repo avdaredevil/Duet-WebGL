@@ -22,8 +22,21 @@ html
         script.
             var t = document.querySelector("#app"), game,bs,wl;
             t.score = 0
+            t.level = 1
             t.track = "public/theme.ogg"
             t.round = n => Math.round(n)
+            //t.getLevel = l => require("../levels/"+l+".json")
+            t.getLevel = _ => ({
+                "walls": [
+                    {"type": "left"},
+                    {"type": "center"},
+                    {"type": "left"},
+                    {"type": "left"},
+                    {"type": "right"},
+                    {"type": "spin"}
+                ],
+                "track": "/public/lv1.ogg"
+            })
             t.setScore = s => {
                 clearInterval(t.curInt)
                 const seg = {in: (s - t.score)/30, f: s}
@@ -58,8 +71,8 @@ html
                     this.disk = graphics.arc(0,0, W_OFFSET*.2, 0, Math.PI*2, false);
                     this.balls = bs = game.add.group()
                     bs.position.set(W_OFFSET, H_OFFSET)
-                    this.ballX  = bs.create(-W_OFFSET*.2-10, -10, MakeCircle('#FF0000'));
-                    this.ballY  = bs.create(W_OFFSET*.2-10, -10, MakeCircle('#2196F3'));
+                    this.ballX  = bs.create(-W_OFFSET*.2, 0, MakeCircle('#FF0000'));
+                    this.ballY  = bs.create(W_OFFSET*.2, 0, MakeCircle('#2196F3'));
                     this.ballX.tint = 0xFF0000;this.ballY.tint = 0x2196F3
                     console.log(this.ballX.boundsPadding)
                     this.walls  = wl = game.add.group()
@@ -91,13 +104,7 @@ html
                     game.scale.pageAlignHorizontally = game.scale.pageAlignVertically = true;
                     game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
                     game.speed = 4
-                    //=MAKE=WALLS================================================|
-                    const c = this.config;const W_W = c.W_OFFSET*1.05
-                    wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
-                    wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
-                    wl.create(0,-30-3*c.PAD, c.MakeRect(W_W,30))
-                    wl.create(0,-30-4*c.PAD, c.MakeRect(W_W,30))
-                    wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
+                    this.makeWalls(t.getLevel(t.level))
                     //===========================================================|
                     game.add.tween(wl.scale).to({
                         x: 1.02, y: 1.02
@@ -105,9 +112,33 @@ html
                     //===========================================================|
                     game.physics.enable(wl, Phaser.Physics.ARCADE);
                     game.physics.enable(bs, Phaser.Physics.ARCADE);
-                    [this.ballX,this.ballY].forEach(b => b.body.immovable=true)
-                    wl.children.forEach(w => {const b = w.body;b.velocity.y = 180;b.immovable=true})
+                    [this.ballX,this.ballY].forEach(b => {b.anchor.set(.5,.5);b.body.immovable=true})
+                    wl.children.forEach(w => {const b = w.body;b.velocity.y = 180;b.immovable=true;if(w.spin) {console.log("spin detected");b.spin = 26}})
                     game.camera.follow(this.center)
+                },
+                makeWalls: function(d) {
+                    //=MAKE=WALLS================================================|
+                    const c = this.config;const W_W = c.W_OFFSET*1.05
+                    t.track = d.track
+                    const w_sprite = {
+                        left: c.MakeRect(W_W,30),
+                        right: c.MakeRect(W_W,30),
+                        center: c.MakeRect(50,50),
+                        spin: c.MakeRect(c.W_OFFSET*.45,30),
+                    }, w_x = (t,s) => ({left: 0, right: game.width-s.width, center: c.W_OFFSET, spin: c.W_OFFSET}[t])
+                    //const block = s => c.MakeRect(W_W,s||30)
+                    d.walls.forEach((w,i) => {
+                        const sprite = w_sprite[w.type];if (!sprite) {return}
+                        const W = wl.create(w_x(w.type,sprite),-i*c.PAD, sprite)
+                        W.anchor.set(0,.5)
+                        if (w.type == "spin" || w.type == "center") {W.anchor.set(.5,.5)}
+                        if (w.type == "spin") {W.spin=true}
+                    })
+                    //wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
+                    //wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
+                    //wl.create(0,-30-3*c.PAD, c.MakeRect(W_W,30))
+                    //wl.create(0,-30-4*c.PAD, c.MakeRect(W_W,30))
+                    //wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
                 },
                 update: function(){
                     const c = this.config
@@ -124,7 +155,7 @@ html
                 resetGame: function(){game.state.start("PlayGame",true,true)},
                 ballSplat: function(x,y){
                     y.tint = x.tint
-                    game.state.start("PlayGame",true,true);
+                    game.state.start("PlayGame",true,true)
                 },
             }
             window.onload = function() {

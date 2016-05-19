@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Duet game written with WebGL",
   "main": "package/main.html",
+  "node-remote": "http://localhost",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Max00355/Duet.git"
