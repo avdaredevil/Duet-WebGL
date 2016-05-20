@@ -4,8 +4,7 @@
         {"type": "center"},
         {"type": "left"},
         {"type": "left"},
-        {"type": "right"},
-        {"type": "spin"}
+        {"type": "right"}
     ],
     "track": "/public/lv1.ogg"
 }

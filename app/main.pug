@@ -21,6 +21,7 @@ html
                 h3 Score: [[round(score)]]
         script.
             var t = document.querySelector("#app"), game,bs,wl;
+            t.w_spin = []
             t.score = 0
             t.level = 1
             t.track = "public/theme.ogg"
@@ -30,10 +31,12 @@ html
                 "walls": [
                     {"type": "left"},
                     {"type": "center"},
-                    {"type": "left"},
+                    {"type": "spin"},
+                    {"type": "spin", "dir": 1},
                     {"type": "left"},
                     {"type": "right"},
-                    {"type": "spin"}
+                    {"type": "left"},
+                    {"type": "center"},
                 ],
                 "track": "/public/lv1.ogg"
             })
@@ -108,12 +111,18 @@ html
                     //===========================================================|
                     game.add.tween(wl.scale).to({
                         x: 1.02, y: 1.02
-                    }, 250, Phaser.Easing.Linear.None, true, 0, 1000, true);
+                    }, 250, Phaser.Easing.Linear.None, true, 0, 1000, true)
+                    if (t.w_spin.length) {
+                        t.w_spin.forEach(w => {const d=w[0],e=w[1];game.add.tween(e).to({
+                            angle: (d?'+':'-')+'360'
+                        }, 8000, Phaser.Easing.Linear.None, true, 0, 1000, false)})
+                    }
                     //===========================================================|
                     game.physics.enable(wl, Phaser.Physics.ARCADE);
                     game.physics.enable(bs, Phaser.Physics.ARCADE);
                     [this.ballX,this.ballY].forEach(b => {b.anchor.set(.5,.5);b.body.immovable=true})
-                    wl.children.forEach(w => {const b = w.body;b.velocity.y = 180;b.immovable=true;if(w.spin) {console.log("spin detected");b.spin = 26}})
+                    t.wlPos = wl.children.map(w => ({x: w.position.x,y:w.position.y}))
+                    wl.children.forEach(w => {const b = w.body;b.velocity.y = 180;b.immovable=true})
                     game.camera.follow(this.center)
                 },
                 makeWalls: function(d) {
@@ -132,7 +141,7 @@ html
                         const W = wl.create(w_x(w.type,sprite),-i*c.PAD, sprite)
                         W.anchor.set(0,.5)
                         if (w.type == "spin" || w.type == "center") {W.anchor.set(.5,.5)}
-                        if (w.type == "spin") {W.spin=true}
+                        if (w.type == "spin") {W.angle=0;t.w_spin.push([w.dir,W])}
                     })
                     //wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
                     //wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
@@ -148,14 +157,14 @@ html
                         game.complete = true
                         const tex = game.add.text(0, 0, "You have completed the Level", {font: "40px 'Poiret One'", fill: "#FFFFFF", align: "center"});
                         tex.position.set(Math.floor(c.W_OFFSET - tex.width/2),Math.floor(game.height/2-tex.height/2))
-                        t.setScore(50)
+                        t.setScore(t.score+50)
                         wl.children.forEach(w => w.body.velocity.y = 0)
                     }
                 },
                 resetGame: function(){game.state.start("PlayGame",true,true)},
                 ballSplat: function(x,y){
                     y.tint = x.tint
-                    game.state.start("PlayGame",true,true)
+                    wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
                 },
             }
             window.onload = function() {
