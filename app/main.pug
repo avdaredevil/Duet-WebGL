@@ -20,6 +20,13 @@ html
                 .flex
                 h3 Score: [[round(score)]]
         script.
+            String.prototype.titleCase = function(){
+                const str = this.toLowerCase().split(' ');
+                for (var i = 0; i < str.length; i++) {
+                    str[i] = str[i].charAt(0).toUpperCase() + str[i].slice(1); 
+                }
+                return str.join(' ');
+            }
             var t = document.querySelector("#app"), game,bs,wl;
             t.w_spin = []
             t.score = 0
@@ -32,10 +39,11 @@ html
                     {"type": "left"},
                     {"type": "center"},
                     {"type": "spin"},
+                    {"type": "center"},
                     {"type": "spin", "dir": 1},
-                    {"type": "left"},
+                    //{"type": "left"},
                     {"type": "right"},
-                    {"type": "left"},
+                    //{"type": "left"},
                     {"type": "center"},
                 ],
                 "track": "/public/lv1.ogg"
@@ -49,7 +57,7 @@ html
             t.gameSetup = function(game){}
             t.gameSetup.prototype = {
                 preload: function(){
-                    const H_OFFSET = game.height*.875, W_OFFSET = game.world.centerX, PAD = 150
+                    const H_OFFSET = game.height*.875, W_OFFSET = game.world.centerX, PAD = 150, BALL_RAD = .22
                     //game.stage.backgroundColor = 'rgba(0,0,0,.9)'
                     const MakeRect = (w,h) => {
                         var drawnObject;
@@ -69,22 +77,18 @@ html
                         bmd.ctx.closePath();
                         bmd.ctx.fill();return bmd
                     }
+                    //=Circle=======================|
                     var graphics = game.add.graphics(W_OFFSET, H_OFFSET);
                     graphics.lineStyle(1, 0x868686);
-                    this.disk = graphics.arc(0,0, W_OFFSET*.2, 0, Math.PI*2, false);
-                    this.balls = bs = game.add.group()
-                    bs.position.set(W_OFFSET, H_OFFSET)
-                    this.ballX  = bs.create(-W_OFFSET*.2, 0, MakeCircle('#FF0000'));
-                    this.ballY  = bs.create(W_OFFSET*.2, 0, MakeCircle('#2196F3'));
-                    this.ballX.tint = 0xFF0000;this.ballY.tint = 0x2196F3
-                    console.log(this.ballX.boundsPadding)
-                    this.walls  = wl = game.add.group()
-                    wl.position.set(0, H_OFFSET/3);
+                    this.disk = graphics.arc(0,0, W_OFFSET*BALL_RAD, 0, Math.PI*2, false);
+                    //=Export=======================|
                     this.config = {
                         PAD: PAD,
                         W_OFFSET: W_OFFSET,
                         H_OFFSET: H_OFFSET,
+                        BALL_RAD: BALL_RAD,
                         MakeRect: MakeRect,
+                        MakeCircle: MakeCircle,
                     }
                 },
                 keyBindings: function(){
@@ -103,45 +107,75 @@ html
                 spinRightDone: function(){bs.rPressed = false;bs.rotate = bs.lPressed && 'left'},
                 spinLeftDone: function(){bs.lPressed = false;bs.rotate = bs.rPressed && 'right'},
                 create: function(){
-                    this.keyBindings()
+                    //=VIEW=============================================================|
                     game.scale.pageAlignHorizontally = game.scale.pageAlignVertically = true;
                     game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
                     game.speed = 4
-                    this.makeWalls(t.getLevel(t.level))
-                    //===========================================================|
-                    game.add.tween(wl.scale).to({
-                        x: 1.02, y: 1.02
-                    }, 250, Phaser.Easing.Linear.None, true, 0, 1000, true)
-                    if (t.w_spin.length) {
-                        t.w_spin.forEach(w => {const d=w[0],e=w[1];game.add.tween(e).to({
-                            angle: (d?'+':'-')+'360'
-                        }, 8000, Phaser.Easing.Linear.None, true, 0, 1000, false)})
-                    }
-                    //===========================================================|
-                    game.physics.enable(wl, Phaser.Physics.ARCADE);
-                    game.physics.enable(bs, Phaser.Physics.ARCADE);
-                    [this.ballX,this.ballY].forEach(b => {b.anchor.set(.5,.5);b.body.immovable=true})
+                    //=KEY/INIT=========================================================|
+                    this.keyBindings()
+                    const ph = game.physics
+                    ph.startSystem(Phaser.Physics.P2JS)
+                    ph.p2.setImpactEvents(true);ph.p2.restitution = 0.8
+                    this.BallCG = ph.p2.createCollisionGroup();this.WallCG = ph.p2.createCollisionGroup();
+                    //ph.p2.updateBoundsCollisionGroup() - //Causes mayhem
+                    //=MAKE=============================================================|
+                    const c = this.config
+                    this.balls = bs = game.add.group()
+                    this.walls = wl = game.add.group();
+                    //====Physics=======================|
+                    ([wl,bs]).forEach(gr => {gr.enableBody = gr.enableBodyDebug = true;gr.physicsBodyType = Phaser.Physics.P2JS})
+                    //====Sprites=======================|
+                    this.ballX = bs.create(c.W_OFFSET*(1-c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#FF0000',11));
+                    this.ballY = bs.create(c.W_OFFSET*(1+c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#2196F3',11));
+                    this.ballX.tint = 0xFF0000;this.ballY.tint = 0x2196F3
+                    this.makeWalls(t.getLevel(t.level));
+                    //=ANIMATE==========================================================|
+                    //game.add.tween(wl.scale).to({
+                    //    x: 1.02, y: 1.02
+                    //}, 250, Phaser.Easing.Linear.None, true, 0, 1000, true)
+                    //if (t.w_spin.length) {
+                    //    t.w_spin.forEach(w => {const d=w[0],e=w[1];game.add.tween(e).to({
+                    //        angle: (d?'+':'-')+'360'
+                    //    }, 8000, Phaser.Easing.Linear.None, true, 0, 1000, false)})
+                    //}
+                    //=PHYSICS/COLLIDE==========================================================|
+                    //game.physics.enable(wl, Phaser.Physics.P2);
+                    //game.physics.enable(bs, Phaser.Physics.P2);
+                    [this.ballX,this.ballY].forEach(b => {
+                        b.body.setCircle(b.width/2)
+                        b.body.fixedRotation = true
+                        b.body.setCollisionGroup(this.BallCG)
+                        b.body.collides([this.WallCG,this.BallCG])
+                        b.anchor.set(.5,.5);b.body.kinematic=true
+                        b.body.collides(this.WallCG,this.ballSplat)
+                    })
                     t.wlPos = wl.children.map(w => ({x: w.position.x,y:w.position.y}))
-                    wl.children.forEach(w => {const b = w.body;b.velocity.y = 180;b.immovable=true})
+                    //wl.children.forEach(w => {const b = w.body;b.velocity.y = 0})
+                    wl.setAll("body.velocity.y",0)
                     game.camera.follow(this.center)
                 },
                 makeWalls: function(d) {
                     //=MAKE=WALLS================================================|
                     const c = this.config;const W_W = c.W_OFFSET*1.05
                     t.track = d.track
-                    const w_sprite = {
-                        left: c.MakeRect(W_W,30),
-                        right: c.MakeRect(W_W,30),
-                        center: c.MakeRect(50,50),
-                        spin: c.MakeRect(c.W_OFFSET*.45,30),
-                    }, w_x = (t,s) => ({left: 0, right: game.width-s.width, center: c.W_OFFSET, spin: c.W_OFFSET}[t])
+                    const mk_sprite = (gr,ty,i) => {
+                        const w_sprite = (w,h) => c.MakeRect(w,h)
+                        const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET}[t])
+                        const tra = {left: [W_W,30],right: [W_W,30],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,30]}
+                        const conf = tra[ty], h_off = c.H_OFFSET/4
+                        if (!conf) {return}
+                        const w = conf[0], h = conf[1]
+                        const sprite = w_sprite(w,h)
+                        const ob = gr.create(w_x(ty,w),h_off-i*c.PAD, sprite)
+                        ob.body.setRectangle(w,h)
+                        return ob
+                    }
                     //const block = s => c.MakeRect(W_W,s||30)
                     d.walls.forEach((w,i) => {
-                        const sprite = w_sprite[w.type];if (!sprite) {return}
-                        const W = wl.create(w_x(w.type,sprite),-i*c.PAD, sprite)
-                        W.anchor.set(0,.5)
-                        if (w.type == "spin" || w.type == "center") {W.anchor.set(.5,.5)}
-                        if (w.type == "spin") {W.angle=0;t.w_spin.push([w.dir,W])}
+                        const W = mk_sprite(wl,w.type,i);if (!W) {return}
+                        W.body.setCollisionGroup(this.WallCG)
+                        W.body.collides([this.WallCG,this.BallCG])
+                        if (w.type == "spin") {W.body.angle = 10*i;t.w_spin.push([w.dir,W])}
                     })
                     //wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
                     //wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
@@ -150,9 +184,25 @@ html
                     //wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
                 },
                 update: function(){
+                    //bs.children.forEach(b => b.body.setZeroVelocity())
+                    wl.children.forEach(b => b.body.setZeroVelocity())
+                    wl.children.forEach(b => b.body.moveDown(200))
                     const c = this.config
-                    if (bs.rotate == "right") {bs.angle += game.speed} else if (bs.rotate == "left") {bs.angle -= game.speed}
-                    game.physics.arcade.collide(bs,wl,this.ballSplat)
+                    //=MOVEMENT==================================|
+                    if (bs.rotate) {bs.children.forEach(ch => {
+                        var ang = this.ballX.body.angle+game.speed*(bs.rotate=="right"?1:-1)
+                        const rad = c.W_OFFSET*c.BALL_RAD,b = ch.body,tR=Math.PI/180, isY = ch==this.ballY
+                        const I = isY?-1:1
+                        ch.body.angle = ang+(isY?180:0)
+                        b.x = c.W_OFFSET-rad*Math.cos(ang*tR)*I
+                        b.y = c.H_OFFSET-rad*Math.sin(ang*tR)*I
+                    })}
+                    if (t.w_spin.length) {
+                        t.w_spin.forEach(w => {
+                            w[1].body.fixedRotation = false;
+                            w[1].body.angle+=(w[0] || -1)*.95
+                        })
+                    }
                     if (wl.children.slice(-1)[0].position.y > c.H_OFFSET && !game.complete) {
                         game.complete = true
                         const tex = game.add.text(0, 0, "You have completed the Level", {font: "40px 'Poiret One'", fill: "#FFFFFF", align: "center"});
@@ -163,9 +213,11 @@ html
                 },
                 resetGame: function(){game.state.start("PlayGame",true,true)},
                 ballSplat: function(x,y){
+                    console.log("Waffa")
                     y.tint = x.tint
                     wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
                 },
+                render: function(){game.debug.body(wl)}
             }
             window.onload = function() {
                 game = t.g = new Phaser.Game(640, 960, Phaser.AUTO, "", undefined, true);
