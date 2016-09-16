@@ -20,6 +20,8 @@ html
                 .flex
                 h3 Score: [[round(score)]]
         script.
+            Array.prototype.make = function(s){return Array.apply(0, Array(s)).map((_,i) => i)}
+            Number.prototype.rangeRandom = function(min,max){return Math.random() * (max - min) + min}
             String.prototype.titleCase = function(){
                 const str = this.toLowerCase().split(' ');
                 for (var i = 0; i < str.length; i++) {
@@ -123,18 +125,19 @@ html
                     const c = this.config;
                     this.balls = bs = game.add.group();
                     this.walls = wl = game.add.group();
+                    this.particlesGroup = game.add.group();
                     //====Physics=======================|
-                    ([wl,bs]).forEach(gr => {gr.enableBody = gr.enableBodyDebug = true;gr.physicsBodyType = Phaser.Physics.P2JS})
+                    ([wl,bs,this.particlesGroup]).forEach(gr => {gr.enableBody = gr.enableBodyDebug = true;gr.physicsBodyType = Phaser.Physics.P2JS})
                     //====Sprites=======================|
                     this.ballX = bs.create(c.W_OFFSET*(1-c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#FF0000',11));
                     this.ballY = bs.create(c.W_OFFSET*(1+c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#2196F3',11));
                     this.ballX.tint = 0xFF0000;this.ballY.tint = 0x2196F3
                     this.makeWalls(t.getLevel(t.level),this);
                     //=ANIMATE==========================================================|
-                    const ANIM_ARGS = [250, Phaser.Easing.Linear.None, true, 0, 1000, true]
-                    wl.children.forEach(ch => game.add.tween(ch.scale).to({
+                    const ANIM_ARGS = delay => [250, Phaser.Easing.Linear.None, true, 0, delay, true]
+                    wl.children.forEach((ch,i) => game.add.tween(ch.scale).to({
                         x: 1.05, y: 1.15
-                    }, ...ANIM_ARGS));
+                    }, ...ANIM_ARGS(250*i)));
                     //game.add.tween(wl.position).to({
                     //    x: -100, y: -200
                     //}, ...ANIM_ARGS);
@@ -222,13 +225,29 @@ html
                 },
                 resetGame: function(){game.state.start("PlayGame",true,true)},
                 ballSplat: function(x,y){
-                    console.log("Waffa",x,y)
-                    y.sprite.tint = x.sprite.tint
+                    this.sprinkleDeath(x.sprite)
                     wl.children.forEach(b => (b.position.y-=this.config.moved))
                     //this.config.moved=0
                     //wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
                 },
-                //render: function(){game.debug.body(wl)}
+                sprinkleDeath: function(x){
+                    const c = this.config, p = x.position,color = '#'+Phaser.Color.componentToHex(x.tint),prt = this.particlesGroup;
+                    ([]).make(15).forEach(i => {
+                        var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
+                        const b = ob.body;
+                        ob.reset(p.x,p.y)
+                        b.velocity.x = (0).rangeRandom(-10, 10)
+                        b.velocity.y = 200
+                        b.data.gravityScale = 100
+                        b.gravity.y = 50
+                        b.mass = .01
+                        ob.anchor.set(.5,.5)
+                        ob.lifespan = 3000
+                        ob.alpha = .8
+                    })
+                    x.kill();
+                },
+                render: function(){game.debug.body(wl)}
             }
             window.onload = function() {
                 game = t.g = new Phaser.Game(640, 960, Phaser.AUTO, "", undefined, true);
