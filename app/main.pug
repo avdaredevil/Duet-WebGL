@@ -47,7 +47,7 @@ html
             t.level = 1
             t.track = "public/theme.ogg"
             t.round = n => Math.round(n)
-            t.exit = _ => App.quit()
+            t.exit = _ => require('nw.gui').App.quit()
             //t.getLevel = l => require("../levels/"+l+".json")
             t.getLevel = _ => ({
                 "walls": [
