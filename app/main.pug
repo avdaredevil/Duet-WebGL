@@ -13,12 +13,23 @@ html
             canvas {height:100%;width:100%}
         style(is="custom-style").
             paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}
+            paper-toolbar[nw] {top:2em}
+            .nav-bar {background: rgba(255,255,255,.08);height: 2em;width: 100%;position:absolute;top:0;left:0;text-align:right;}
+            .red-button {color:white;margin-left: 1em;width: 4em;height:100%;position:absolute;right:0;text-align: center}
+            .red-button > * {height:100%;padding: 6px}
+            .red-button:hover {background:#c62828}
+            .creator {position: absolute;bottom: 0;font-family: Poiret One;color: rgba(255, 255, 255, 0.11);font-size: .8em;right: 5px;transition: color .25s}
+            .creator:hover {color: rgba(255, 255, 255, 0.41)}
+            .creator a {text-decoration:none;color:inherit}
         template#app(is="dom-bind")
             audio(src="[[track]]",loop,autoplay)
-            paper-toolbar
+            paper-toolbar(nw$="[[isNodeWebkit]]")
                 h1 Duet
                 .flex
                 h3 Score: [[round(score)]]
+            header.nav-bar(hidden$="[[!isNodeWebkit]]"): div.red-button: paper-icon-button(icon="close",on-tap="exit")
+        footer.creator
+            a.AP(href='http://linkedin.com/in/apoorvverma', target='_blank') Created by Apoorv Verma [AP]
         script.
             Array.prototype.make = function(s){return Array.apply(0, Array(s)).map((_,i) => i)}
             Number.prototype.rangeRandom = function(min,max){return Math.random() * (max - min) + min}
@@ -30,11 +41,13 @@ html
                 return str.join(' ');
             }
             var t = document.querySelector("#app"), game,bs,wl;
+            t.isNodeWebkit = typeof require != "undefined"
             t.w_spin = []
             t.score = 0
             t.level = 1
             t.track = "public/theme.ogg"
             t.round = n => Math.round(n)
+            t.exit = _ => App.quit()
             //t.getLevel = l => require("../levels/"+l+".json")
             t.getLevel = _ => ({
                 "walls": [
@@ -236,6 +249,7 @@ html
                         var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
                         const b = ob.body;
                         ob.reset(p.x,p.y)
+                        ob.tint = x.tint
                         b.velocity.x = (0).rangeRandom(-10, 10)
                         b.velocity.y = 200
                         b.data.gravityScale = 100

@@ -1,6 +1,14 @@
 <html><head><title>Duet WebGL - AP</title><script src="bower_components/webcomponentsjs/webcomponents-lite.min.js"></script><link href="elements.html" rel="import"/><style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning"></style><link rel="stylesheet" async="async" href="https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Poiret+One|Roboto"/><script src="bower_components/phaser/build/phaser.min.js"></script></head><body class="fullbleed"><style>html,body,head {margin:0;padding:0;border:0;background: #1D1D1D;overflow:hidden}
 h1,h2,h3 {font-family: "Poiret One";font-weight:200}
-canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar><h1>Duet</h1><div class="flex"></div><h3>Score: [[round(score)]]</h3></paper-toolbar></template><script>Array.prototype.make = function(s){return Array.apply(0, Array(s)).map((_,i) => i)}
+canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}
+paper-toolbar[nw] {top:2em}
+.nav-bar {background: rgba(255,255,255,.08);height: 2em;width: 100%;position:absolute;top:0;left:0;text-align:right;}
+.red-button {color:white;margin-left: 1em;width: 4em;height:100%;position:absolute;right:0;text-align: center}
+.red-button > * {height:100%;padding: 6px}
+.red-button:hover {background:#c62828}
+.creator {position: absolute;bottom: 0;font-family: Poiret One;color: rgba(255, 255, 255, 0.11);font-size: .8em;right: 5px;transition: color .25s}
+.creator:hover {color: rgba(255, 255, 255, 0.41)}
+.creator a {text-decoration:none;color:inherit}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar nw$="[[isNodeWebkit]]"><h1>Duet</h1><div class="flex"></div><h3>Score: [[round(score)]]</h3></paper-toolbar><header class="nav-bar" hidden$="[[!isNodeWebkit]]"><div class="red-button"><paper-icon-button icon="close" on-tap="exit"></paper-icon-button></div></header></template><footer class="creator"><a class="AP" href="http://linkedin.com/in/apoorvverma" target="_blank">Created by Apoorv Verma [AP]</a></footer><script>Array.prototype.make = function(s){return Array.apply(0, Array(s)).map((_,i) => i)}
 Number.prototype.rangeRandom = function(min,max){return Math.random() * (max - min) + min}
 String.prototype.titleCase = function(){
     const str = this.toLowerCase().split(' ');
@@ -10,11 +18,13 @@ String.prototype.titleCase = function(){
     return str.join(' ');
 }
 var t = document.querySelector("#app"), game,bs,wl;
+t.isNodeWebkit = typeof require != "undefined"
 t.w_spin = []
 t.score = 0
 t.level = 1
 t.track = "public/theme.ogg"
 t.round = n => Math.round(n)
+t.exit = _ => App.quit()
 //t.getLevel = l => require("../levels/"+l+".json")
 t.getLevel = _ => ({
     "walls": [
@@ -216,6 +226,7 @@ t.gameSetup.prototype = {
             var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
             const b = ob.body;
             ob.reset(p.x,p.y)
+            ob.tint = x.tint
             b.velocity.x = (0).rangeRandom(-10, 10)
             b.velocity.y = 200
             b.data.gravityScale = 100
