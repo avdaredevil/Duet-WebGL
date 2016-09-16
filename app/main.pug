@@ -41,9 +41,9 @@ html
                     {"type": "spin"},
                     {"type": "center"},
                     {"type": "spin", "dir": 1},
-                    //{"type": "left"},
+                    {"type": "left"},
                     {"type": "right"},
-                    //{"type": "left"},
+                    {"type": "left"},
                     {"type": "center"},
                 ],
                 "track": "/public/lv1.ogg"
@@ -84,6 +84,7 @@ html
                     //=Export=======================|
                     this.config = {
                         PAD: PAD,
+                        moved: 0,
                         W_OFFSET: W_OFFSET,
                         H_OFFSET: H_OFFSET,
                         BALL_RAD: BALL_RAD,
@@ -117,10 +118,10 @@ html
                     ph.startSystem(Phaser.Physics.P2JS)
                     ph.p2.setImpactEvents(true);ph.p2.restitution = 0.8
                     this.BallCG = ph.p2.createCollisionGroup();this.WallCG = ph.p2.createCollisionGroup();
-                    //ph.p2.updateBoundsCollisionGroup() - //Causes mayhem
+                    //ph.p2.updateBoundsCollisionGroup(); //Causes mayhem
                     //=MAKE=============================================================|
-                    const c = this.config
-                    this.balls = bs = game.add.group()
+                    const c = this.config;
+                    this.balls = bs = game.add.group();
                     this.walls = wl = game.add.group();
                     //====Physics=======================|
                     ([wl,bs]).forEach(gr => {gr.enableBody = gr.enableBodyDebug = true;gr.physicsBodyType = Phaser.Physics.P2JS})
@@ -128,11 +129,15 @@ html
                     this.ballX = bs.create(c.W_OFFSET*(1-c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#FF0000',11));
                     this.ballY = bs.create(c.W_OFFSET*(1+c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#2196F3',11));
                     this.ballX.tint = 0xFF0000;this.ballY.tint = 0x2196F3
-                    this.makeWalls(t.getLevel(t.level));
+                    this.makeWalls(t.getLevel(t.level),this);
                     //=ANIMATE==========================================================|
-                    //game.add.tween(wl.scale).to({
-                    //    x: 1.02, y: 1.02
-                    //}, 250, Phaser.Easing.Linear.None, true, 0, 1000, true)
+                    const ANIM_ARGS = [250, Phaser.Easing.Linear.None, true, 0, 1000, true]
+                    wl.children.forEach(ch => game.add.tween(ch.scale).to({
+                        x: 1.05, y: 1.15
+                    }, ...ANIM_ARGS));
+                    //game.add.tween(wl.position).to({
+                    //    x: -100, y: -200
+                    //}, ...ANIM_ARGS);
                     //if (t.w_spin.length) {
                     //    t.w_spin.forEach(w => {const d=w[0],e=w[1];game.add.tween(e).to({
                     //        angle: (d?'+':'-')+'360'
@@ -147,14 +152,16 @@ html
                         b.body.setCollisionGroup(this.BallCG)
                         b.body.collides([this.WallCG,this.BallCG])
                         b.anchor.set(.5,.5);b.body.kinematic=true
-                        b.body.collides(this.WallCG,this.ballSplat)
+                        //b.body.collides(this.WallCG,this.ballSplat)
+                        b.body.createGroupCallback(this.WallCG,this.ballSplat,this)
                     })
-                    t.wlPos = wl.children.map(w => ({x: w.position.x,y:w.position.y}))
+                    app.c = this
+                    t.wlPos = wl.children.map(w => ({x: w.position.x,y:w.position.y,deg:w.body.angle}))
                     //wl.children.forEach(w => {const b = w.body;b.velocity.y = 0})
                     wl.setAll("body.velocity.y",0)
                     game.camera.follow(this.center)
                 },
-                makeWalls: function(d) {
+                makeWalls: function(d,cg) {
                     //=MAKE=WALLS================================================|
                     const c = this.config;const W_W = c.W_OFFSET*1.05
                     t.track = d.track
@@ -173,8 +180,9 @@ html
                     //const block = s => c.MakeRect(W_W,s||30)
                     d.walls.forEach((w,i) => {
                         const W = mk_sprite(wl,w.type,i);if (!W) {return}
-                        W.body.setCollisionGroup(this.WallCG)
-                        W.body.collides([this.WallCG,this.BallCG])
+                        W.body.setCollisionGroup(cg.WallCG)
+                        //W.body.kinematic=true // MAKES PASS_THRU
+                        W.body.collides([cg.WallCG,cg.BallCG])
                         if (w.type == "spin") {W.body.angle = 10*i;t.w_spin.push([w.dir,W])}
                     })
                     //wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
@@ -188,6 +196,7 @@ html
                     wl.children.forEach(b => b.body.setZeroVelocity())
                     wl.children.forEach(b => b.body.moveDown(200))
                     const c = this.config
+                    c.moved+=200
                     //=MOVEMENT==================================|
                     if (bs.rotate) {bs.children.forEach(ch => {
                         var ang = this.ballX.body.angle+game.speed*(bs.rotate=="right"?1:-1)
@@ -213,11 +222,13 @@ html
                 },
                 resetGame: function(){game.state.start("PlayGame",true,true)},
                 ballSplat: function(x,y){
-                    console.log("Waffa")
-                    y.tint = x.tint
-                    wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
+                    console.log("Waffa",x,y)
+                    y.sprite.tint = x.sprite.tint
+                    wl.children.forEach(b => (b.position.y-=this.config.moved))
+                    //this.config.moved=0
+                    //wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
                 },
-                render: function(){game.debug.body(wl)}
+                //render: function(){game.debug.body(wl)}
             }
             window.onload = function() {
                 game = t.g = new Phaser.Game(640, 960, Phaser.AUTO, "", undefined, true);
