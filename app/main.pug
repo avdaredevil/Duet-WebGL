@@ -14,10 +14,11 @@ html
         style(is="custom-style").
             paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}
             paper-toolbar[nw] {top:2em}
-            .nav-bar {background: rgba(255,255,255,.08);height: 2em;width: 100%;position:absolute;top:0;left:0;text-align:right;}
-            .red-button {color:white;margin-left: 1em;width: 4em;height:100%;position:absolute;right:0;text-align: center}
-            .red-button > * {height:100%;padding: 6px}
-            .red-button:hover {background:#c62828}
+            .nav-bar {background: rgba(255,255,255,.08);height: 2em;width: 100%;position:absolute;top:0;left:0;text-align:right}
+            .nav-bar .btn {color:white;width: 4em;height:100%;text-align:center;display:inline-block;transition: background-color .25s}
+            .nav-bar .btn > * {height:100%;padding: 6px}
+            .nav-bar .close.btn:hover {background:#c62828}
+            .nav-bar .min.btn:hover {background:rgba(255,255,255,.21)}
             .creator {position: absolute;bottom: 0;font-family: Poiret One;color: rgba(255, 255, 255, 0.11);font-size: .8em;right: 5px;transition: color .25s}
             .creator:hover {color: rgba(255, 255, 255, 0.41)}
             .creator a {text-decoration:none;color:inherit}
@@ -27,7 +28,9 @@ html
                 h1 Duet
                 .flex
                 h3 Score: [[round(score)]]
-            header.nav-bar(hidden$="[[!isNodeWebkit]]"): div.red-button: paper-icon-button(icon="close",on-tap="exit")
+            header.nav-bar(hidden$="[[!isNodeWebkit]]")
+                .btn.min: paper-icon-button(icon="remove",on-tap="minimize")
+                .btn.close: paper-icon-button(icon="close",on-tap="exit")
         footer.creator
             a.AP(href='http://linkedin.com/in/apoorvverma', target='_blank') Created by Apoorv Verma [AP]
         script.
@@ -47,22 +50,28 @@ html
             t.level = 1
             t.track = "public/theme.ogg"
             t.round = n => Math.round(n)
-            t.exit = _ => require('nw.gui').App.quit()
-            //t.getLevel = l => require("../levels/"+l+".json")
-            t.getLevel = _ => ({
-                "walls": [
-                    {"type": "left"},
-                    {"type": "center"},
-                    {"type": "spin"},
-                    {"type": "center"},
-                    {"type": "spin", "dir": 1},
-                    {"type": "left"},
-                    {"type": "right"},
-                    {"type": "left"},
-                    {"type": "center"},
-                ],
-                "track": "/public/lv1.ogg"
-            })
+            t.minimize = _ => t.nw?t.nw.gui.Window.get().minimize():alert("No can do minimizing!")
+            t.exit = _ => t.nw?t.nw.gui.App.quit():window.close()
+            t.sleep = t => new Promise(res => setTimeout(res,t))
+            if (t.isNodeWebkit) {
+                t.getLevel = l => require("../levels/"+l+".json")
+                t.nw = {gui: require('nw.gui')}
+            } else {
+                t.getLevel = _ => ({
+                    "walls": [
+                        {"type": "left"},
+                        {"type": "center"},
+                        {"type": "spin"},
+                        {"type": "center"},
+                        {"type": "spin", "dir": 1},
+                        {"type": "left"},
+                        {"type": "right"},
+                        {"type": "left"},
+                        {"type": "center"},
+                    ],
+                    "track": "/public/lv1.ogg"
+                })
+            }
             t.setScore = s => {
                 clearInterval(t.curInt)
                 const seg = {in: (s - t.score)/30, f: s}
@@ -214,31 +223,44 @@ html
                     const c = this.config
                     c.moved+=200
                     //=MOVEMENT==================================|
-                    if (bs.rotate) {bs.children.forEach(ch => {
-                        var ang = this.ballX.body.angle+game.speed*(bs.rotate=="right"?1:-1)
-                        const rad = c.W_OFFSET*c.BALL_RAD,b = ch.body,tR=Math.PI/180, isY = ch==this.ballY
-                        const I = isY?-1:1
-                        ch.body.angle = ang+(isY?180:0)
-                        b.x = c.W_OFFSET-rad*Math.cos(ang*tR)*I
-                        b.y = c.H_OFFSET-rad*Math.sin(ang*tR)*I
-                    })}
+                    if (bs.rotate) {this.rotateBalls()}
                     if (t.w_spin.length) {
                         t.w_spin.forEach(w => {
                             w[1].body.fixedRotation = false;
                             w[1].body.angle+=(w[0] || -1)*.95
                         })
                     }
-                    if (wl.children.slice(-1)[0].position.y > c.H_OFFSET && !game.complete) {
+                    if (wl.children.slice(-1)[0].position.y > c.H_OFFSET+200 && !game.complete) {
                         game.complete = true
                         const tex = game.add.text(0, 0, "You have completed the Level", {font: "40px 'Poiret One'", fill: "#FFFFFF", align: "center"});
                         tex.position.set(Math.floor(c.W_OFFSET - tex.width/2),Math.floor(game.height/2-tex.height/2))
                         t.setScore(t.score+50)
                         wl.children.forEach(w => w.body.velocity.y = 0)
+                        t.sleep(2000).then(_ => this.LevelUp(this))
                     }
                 },
+                rotateBalls: function(){
+                    const c = this.config
+                    bs.children.forEach(ch => {
+                        var ang = this.ballX.body.angle+game.speed*(bs.rotate=="right"?1:-1)
+                        const rad = c.W_OFFSET*c.BALL_RAD,b = ch.body,tR=Math.PI/180, isY = ch==this.ballY
+                        const I = isY?-1:1
+                        ch.body.angle = ang+(isY?180:0)
+                        b.x = c.W_OFFSET-rad*Math.cos(ang*tR)*I
+                        b.y = c.H_OFFSET-rad*Math.sin(ang*tR)*I
+                    })
+                },
                 resetGame: function(){game.state.start("PlayGame",true,true)},
+                LevelUp: function(me){
+                    const c = me.config
+                    me.ballX.reset(me.W_OFFSET,me.H_OFFSET);me.ballY.reset(me.W_OFFSET,me.H_OFFSET)
+                    bs.rotate = "left";this.rotateBalls();bs.rotate = ""
+                    t.level++;
+                    t.sleep(1000).then(_ => this.resetGame())
+                },
                 ballSplat: function(x,y){
                     this.sprinkleDeath(x.sprite)
+                    y.sprite.tint = x.sprite.tint
                     wl.children.forEach(b => (b.position.y-=this.config.moved))
                     //this.config.moved=0
                     //wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
@@ -259,7 +281,7 @@ html
                         ob.lifespan = 3000
                         ob.alpha = .8
                     })
-                    x.kill();
+                    x.kill()
                 },
                 render: function(){game.debug.body(wl)}
             }

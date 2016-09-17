@@ -1,0 +1,14 @@
+{
+    "walls": [
+        {"type": "left"},
+        {"type": "center"},
+        {"type": "spin"},
+        {"type": "center"},
+        {"type": "spin", "dir": 1},
+        {"type": "left"},
+        {"type": "right"},
+        {"type": "left"},
+        {"type": "center"},
+    ],
+    "track": "/public/lv2.ogg"
+}
