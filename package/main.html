@@ -2,14 +2,15 @@
 h1,h2,h3 {font-family: "Poiret One";font-weight:200}
 canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}
 paper-toolbar[nw] {top:2em}
-.nav-bar {background: rgba(255,255,255,.08);height: 2em;width: 100%;position:absolute;top:0;left:0;text-align:right;-webkit-app-region: drag}
+.scrubber {-webkit-app-region: drag}
+.nav-bar {background: rgba(255,255,255,.08);height: 2em;width: 100%;position:absolute;top:0;left:0;text-align:right}
 .nav-bar .btn {color:white;width: 4em;height:100%;text-align:center;display:inline-block;transition: background-color .25s}
 .nav-bar .btn > * {height:100%;padding: 6px}
 .nav-bar .close.btn:hover {background:#c62828}
 .nav-bar .min.btn:hover {background:rgba(255,255,255,.21)}
 .creator {position: absolute;bottom: 0;font-family: Poiret One;color: rgba(255, 255, 255, 0.11);font-size: .8em;right: 5px;transition: color .25s}
 .creator:hover {color: rgba(255, 255, 255, 0.41)}
-.creator a {text-decoration:none;color:inherit}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar nw$="[[isNodeWebkit]]"><h1>Duet</h1><div class="flex"></div><h3>Score: [[round(score)]]</h3></paper-toolbar><header class="nav-bar" hidden$="[[!isNodeWebkit]]"><div class="btn min"><paper-icon-button icon="remove" on-tap="minimize"></paper-icon-button></div><div class="btn close"><paper-icon-button icon="close" on-tap="exit"></paper-icon-button></div></header></template><footer class="creator"><a class="AP" href="http://linkedin.com/in/apoorvverma" target="_blank">Created by Apoorv Verma [AP]</a></footer><script>Array.prototype.make = function(s){return Array.apply(0, Array(s)).map((_,i) => i)}
+.creator a {text-decoration:none;color:inherit}</style><template id="app" is="dom-bind"><audio src="[[track]]" loop="loop" autoplay="autoplay"></audio><paper-toolbar nw$="[[isNodeWebkit]]"><h1>Duet</h1><div class="flex"></div><h3>Score: [[round(score)]]</h3></paper-toolbar><header class="nav-bar layout horizontal" hidden$="[[!isNodeWebkit]]"><div class="flex scrubber"></div><div class="btn min"><paper-icon-button icon="remove" on-tap="minimize"></paper-icon-button></div><div class="btn close"><paper-icon-button icon="close" on-tap="exit"></paper-icon-button></div></header></template><footer class="creator"><a class="AP" href="http://linkedin.com/in/apoorvverma" target="_blank">Created by Apoorv Verma [AP]</a></footer><script>Array.prototype.make = function(s){return Array.apply(0, Array(s)).map((_,i) => i)}
 Number.prototype.rangeRandom = function(min,max){return Math.random() * (max - min) + min}
 String.prototype.titleCase = function(){
     const str = this.toLowerCase().split(' ');
@@ -232,8 +233,8 @@ t.gameSetup.prototype = {
     resetGame: function(){game.state.start("PlayGame",true,true)},
     LevelUp: function(me){
         const c = me.config, revive = this.sprinkleRevive.bind(this);
-        revive(me.ballX,{x: c.W_OFFSET*(1-c.BALL_RAD), y:c.H_OFFSET})
-        revive(me.ballY,{x: c.W_OFFSET*(1+c.BALL_RAD), y:c.H_OFFSET})
+        me.ballX.alive || revive(me.ballX,{x: c.W_OFFSET*(1-c.BALL_RAD), y:c.H_OFFSET})
+        me.ballY.alive || revive(me.ballY,{x: c.W_OFFSET*(1+c.BALL_RAD), y:c.H_OFFSET})
         t.sprinkleBack.push(_ => {
             const ball = me.ballX
             if (Math.abs(ball.body.angle%360) < 10) {bs.rotate="";ball.body.angle=0;this.rotateBalls();return true}
@@ -252,23 +253,24 @@ t.gameSetup.prototype = {
     },
     sprinkleRevive: function(x,p){
         const c = this.config,color = '#'+Phaser.Color.componentToHex(x.tint),prt = this.particlesGroup;
-        const pr = [];
+        const pr = [];var lowest = [-999,0];
         ([]).make(25).forEach(i => {
             var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
-            const b = ob.body, pos = {x:c.W_OFFSET+c.W_OFFSET*(0).rangeRandom(-.3, .3),y:(0).rangeRandom(0,300)}
+            const b = ob.body, pos = {x:c.W_OFFSET+c.W_OFFSET*(0).rangeRandom(-.75, .75),y:(0).rangeRandom(-300,0)}
+            var l = false;
+            if (pos.y > lowest[0]) {lowest = [pos.y, i];l=true}
             ob.reset(pos.x,pos.y)
             ob.alpha = .8
             ob.tint = x.tint
             b.damping = 0.03
             b.mass = .01
-            b.collideWorldBounds = true
             b.velocity.x = 0;b.velocity.y = 0
             ob.anchor.set(.5,.5)
             pr.push(new Promise(res => {
                 const HandleTween = _ => {
                     const cpos = ob.position
                     const angle = Math.atan2(cpos.y - p.y, cpos.x - p.x);
-                    const yspeed = 300*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
+                    const yspeed = (l?75:0)+300*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
                     const xspeed = 300*Math.sqrt(Math.sqrt((cpos.x - p.x)/(pos.x - p.x)));
                     console.log("Particle-"+i,"Distance:",((cpos.y - p.y)/(pos.y - p.y)),"|",t.distanceFormula(cpos,p))
                     b.rotation = angle + game.math.degToRad(90);
@@ -281,11 +283,14 @@ t.gameSetup.prototype = {
             //    x: p.x, y: p.y
             //}, 2000, Phaser.Easing.Linear.None, true, 0, 0, true)
         })
-        x.reset(p.x,p.y)
-        x.scale.set(.1,.1)
-        game.add.tween(x.scale).from({x: .1, y: .1}).to({
-            x: 1, y: 1
-        }, 3250, Phaser.Easing.Linear.None, true, 1250, 0, false);
+        console.warn("LOWEST",lowest)
+        pr[lowest[1]].then(_ => {
+            x.reset(p.x,p.y)
+            x.scale.set(.1,.1)
+            game.add.tween(x.scale).from({x: 0, y: 0}).to({
+                x: 1, y: 1
+            }, 1250, Phaser.Easing.Linear.None, true, 0, 0, false);
+        })
         Promise.all(pr).then(_ => {
             
         })
