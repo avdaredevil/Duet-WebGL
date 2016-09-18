@@ -45,7 +45,7 @@ html
             }
             var t = document.querySelector("#app"), game,bs,wl;
             t.isNodeWebkit = typeof require != "undefined"
-            t.w_spin = []
+            t.w_spin = [];t.sprinkleBack = []
             t.score = 0
             t.level = 1
             t.track = "public/theme.ogg"
@@ -53,6 +53,7 @@ html
             t.minimize = _ => t.nw?t.nw.gui.Window.get().minimize():alert("No can do minimizing!")
             t.exit = _ => t.nw?t.nw.gui.App.quit():window.close()
             t.sleep = t => new Promise(res => setTimeout(res,t))
+            t.distanceFormula = (a,b) => Math.sqrt(Math.pow(a.x-b.x,2)+Math.pow(a.y-b.y,2))
             if (t.isNodeWebkit) {
                 t.getLevel = l => require("../levels/"+l+".json")
                 t.nw = {gui: require('nw.gui')}
@@ -60,13 +61,13 @@ html
                 t.getLevel = _ => ({
                     "walls": [
                         {"type": "left"},
-                        {"type": "center"},
-                        {"type": "spin"},
-                        {"type": "center"},
-                        {"type": "spin", "dir": 1},
-                        {"type": "left"},
-                        {"type": "right"},
-                        {"type": "left"},
+                        //{"type": "center"},
+                        //{"type": "spin"},
+                        //{"type": "center"},
+                        //{"type": "spin", "dir": 1},
+                        //{"type": "left"},
+                        //{"type": "right"},
+                        //{"type": "left"},
                         {"type": "center"},
                     ],
                     "track": "/public/lv1.ogg"
@@ -132,6 +133,7 @@ html
                 spinRightDone: function(){bs.rPressed = false;bs.rotate = bs.lPressed && 'left'},
                 spinLeftDone: function(){bs.lPressed = false;bs.rotate = bs.rPressed && 'right'},
                 create: function(){
+                    t.gameSleep = t => new Promise(res => game.time.events.add(t, _ => res(this), this))
                     //=VIEW=============================================================|
                     game.scale.pageAlignHorizontally = game.scale.pageAlignVertically = true;
                     game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
@@ -149,7 +151,7 @@ html
                     this.walls = wl = game.add.group();
                     this.particlesGroup = game.add.group();
                     //====Physics=======================|
-                    ([wl,bs,this.particlesGroup]).forEach(gr => {gr.enableBody = gr.enableBodyDebug = true;gr.physicsBodyType = Phaser.Physics.P2JS})
+                    ([wl,bs,this.particlesGroup]).forEach(gr => {gr.enableBody = true;gr.physicsBodyType = Phaser.Physics.P2JS})
                     //====Sprites=======================|
                     this.ballX = bs.create(c.W_OFFSET*(1-c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#FF0000',11));
                     this.ballY = bs.create(c.W_OFFSET*(1+c.BALL_RAD), c.H_OFFSET, c.MakeCircle('#2196F3',11));
@@ -217,12 +219,14 @@ html
                     //wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
                 },
                 update: function(){
-                    //bs.children.forEach(b => b.body.setZeroVelocity())
-                    wl.children.forEach(b => b.body.setZeroVelocity())
-                    wl.children.forEach(b => b.body.moveDown(200))
+                    game.complete || wl.children.forEach(b => b.body.moveDown(200))
                     const c = this.config
                     c.moved+=200
                     //=MOVEMENT==================================|
+                    t.sprinkleBack.forEach((f,i) => {
+                        if (f()) {delete t.sprinkleBack[i]}
+                    })
+                    t.sprinkleBack = t.sprinkleBack.filter(i=>i)
                     if (bs.rotate) {this.rotateBalls()}
                     if (t.w_spin.length) {
                         t.w_spin.forEach(w => {
@@ -230,19 +234,19 @@ html
                             w[1].body.angle+=(w[0] || -1)*.95
                         })
                     }
+                    //=COMPLETED==================================|
                     if (wl.children.slice(-1)[0].position.y > c.H_OFFSET+200 && !game.complete) {
                         game.complete = true
                         const tex = game.add.text(0, 0, "You have completed the Level", {font: "40px 'Poiret One'", fill: "#FFFFFF", align: "center"});
                         tex.position.set(Math.floor(c.W_OFFSET - tex.width/2),Math.floor(game.height/2-tex.height/2))
                         t.setScore(t.score+50)
-                        wl.children.forEach(w => w.body.velocity.y = 0)
-                        t.sleep(2000).then(_ => this.LevelUp(this))
+                        t.gameSleep(1500).then(_ => this.LevelUp(this))
                     }
                 },
                 rotateBalls: function(){
                     const c = this.config
                     bs.children.forEach(ch => {
-                        var ang = this.ballX.body.angle+game.speed*(bs.rotate=="right"?1:-1)
+                        var ang = this.ballX.body.angle+game.speed*(bs.rotate=="right"?1:bs.rotate=="left"?-1:0)
                         const rad = c.W_OFFSET*c.BALL_RAD,b = ch.body,tR=Math.PI/180, isY = ch==this.ballY
                         const I = isY?-1:1
                         ch.body.angle = ang+(isY?180:0)
@@ -252,38 +256,84 @@ html
                 },
                 resetGame: function(){game.state.start("PlayGame",true,true)},
                 LevelUp: function(me){
-                    const c = me.config
-                    me.ballX.reset(me.W_OFFSET,me.H_OFFSET);me.ballY.reset(me.W_OFFSET,me.H_OFFSET)
-                    bs.rotate = "left";this.rotateBalls();bs.rotate = ""
+                    const c = me.config, revive = this.sprinkleRevive.bind(this);
+                    revive(me.ballX,{x: c.W_OFFSET*(1-c.BALL_RAD), y:c.H_OFFSET})
+                    revive(me.ballY,{x: c.W_OFFSET*(1+c.BALL_RAD), y:c.H_OFFSET})
+                    t.sprinkleBack.push(_ => {
+                        const ball = me.ballX
+                        if (Math.abs(ball.body.angle%360) < 10) {bs.rotate="";ball.body.angle=0;this.rotateBalls();return true}
+                        bs.rotate="left";this.rotateBalls()
+                        console.info("Angle Adjust",Math.abs(ball.body.angle%360))
+                    })
                     t.level++;
-                    t.sleep(1000).then(_ => this.resetGame())
+                    //t.gameSleep(1000).then(this.resetGame.bind(this))
                 },
                 ballSplat: function(x,y){
                     this.sprinkleDeath(x.sprite)
                     y.sprite.tint = x.sprite.tint
-                    wl.children.forEach(b => (b.position.y-=this.config.moved))
+                    //wl.children.forEach(b => b.reset(b.position.x,b.position.y-this.config.moved))
                     //this.config.moved=0
                     //wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
                 },
+                sprinkleRevive: function(x,p){
+                    const c = this.config,color = '#'+Phaser.Color.componentToHex(x.tint),prt = this.particlesGroup;
+                    const pr = [];
+                    ([]).make(25).forEach(i => {
+                        var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
+                        const b = ob.body, pos = {x:c.W_OFFSET+c.W_OFFSET*(0).rangeRandom(-.3, .3),y:(0).rangeRandom(0,300)}
+                        ob.reset(pos.x,pos.y)
+                        ob.alpha = .8
+                        ob.tint = x.tint
+                        b.damping = 0.03
+                        b.mass = .01
+                        b.collideWorldBounds = true
+                        b.velocity.x = 0;b.velocity.y = 0
+                        ob.anchor.set(.5,.5)
+                        pr.push(new Promise(res => {
+                            const HandleTween = _ => {
+                                const cpos = ob.position
+                                const angle = Math.atan2(cpos.y - p.y, cpos.x - p.x);
+                                const yspeed = 300*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
+                                const xspeed = 300*Math.sqrt(Math.sqrt((cpos.x - p.x)/(pos.x - p.x)));
+                                console.log("Particle-"+i,"Distance:",((cpos.y - p.y)/(pos.y - p.y)),"|",t.distanceFormula(cpos,p))
+                                b.rotation = angle + game.math.degToRad(90);
+                                b.velocity.x = -Math.cos(angle) * xspeed;b.velocity.y = -Math.sin(angle) * yspeed
+                                if (t.distanceFormula(cpos,p) < 1) {b.velocity.x=b.velocity.y=0;ob.kill();res();return true}
+                            }
+                            t.sprinkleBack.push(HandleTween)
+                        }))
+                        //game.add.tween(ob.position).to({
+                        //    x: p.x, y: p.y
+                        //}, 2000, Phaser.Easing.Linear.None, true, 0, 0, true)
+                    })
+                    x.reset(p.x,p.y)
+                    x.scale.set(.1,.1)
+                    game.add.tween(x.scale).from({x: .1, y: .1}).to({
+                        x: 1, y: 1
+                    }, 3250, Phaser.Easing.Linear.None, true, 1250, 0, false);
+                    Promise.all(pr).then(_ => {
+                        
+                    })
+                },
                 sprinkleDeath: function(x){
                     const c = this.config, p = x.position,color = '#'+Phaser.Color.componentToHex(x.tint),prt = this.particlesGroup;
-                    ([]).make(15).forEach(i => {
+                    ([]).make(50).forEach(i => {
                         var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
                         const b = ob.body;
                         ob.reset(p.x,p.y)
                         ob.tint = x.tint
-                        b.velocity.x = (0).rangeRandom(-10, 10)
-                        b.velocity.y = 200
-                        b.data.gravityScale = 100
-                        b.gravity.y = 50
+                        b.velocity.x = (0).rangeRandom(-100, 100)
+                        b.force.y = 100+(0).rangeRandom(-10, 150)
                         b.mass = .01
+                        b.fixedRotation = true
+                        b.collideWorldBounds = false
                         ob.anchor.set(.5,.5)
                         ob.lifespan = 3000
                         ob.alpha = .8
                     })
                     x.kill()
                 },
-                render: function(){game.debug.body(wl)}
+                //render: function(){[this.particlesGroup,wl,bs].forEach(c => c.children.forEach(ch => ch.body.debug=true))}
             }
             window.onload = function() {
                 game = t.g = new Phaser.Game(640, 960, Phaser.AUTO, "", undefined, true);
