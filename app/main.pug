@@ -212,7 +212,7 @@ html
                 },
                 makeWalls: function(d,cg) {
                     //=MAKE=WALLS================================================|
-                    const c = this.config;const W_W = c.W_OFFSET*1.05
+                    const c = this.config, W_W = c.W_OFFSET*1.05;
                     t.track = d.track
                     const mk_sprite = (gr,ty,i) => {
                         const w_sprite = (w,h) => c.MakeRect(w,h)
@@ -241,9 +241,17 @@ html
                     //wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
                 },
                 update: function(){
+                    const c = this.config, pnt = game.input.activePointer;
                     game.complete || wl.children.forEach(b => b.body.moveDown(200))
-                    const c = this.config
-                    c.moved+=200
+                    game.complete || (c.moved+=200)
+                    //=CHECKS====================================|
+                    if (pnt.isDown) {
+                        c.cursor = true
+                        bs.rotate = pnt.positionDown.x < c.W_OFFSET?"left":"right"
+                        console.log(bs.rotate)
+                    } else if (c.cursor) {
+                        c.cursor = false;bs.rotate = ""
+                    }
                     //=MOVEMENT==================================|
                     t.sprinkleBack.forEach((f,i) => {
                         if (f()) {delete t.sprinkleBack[i]}
@@ -277,29 +285,66 @@ html
                     })
                 },
                 resetGame: function(){game.state.start("PlayGame",true,true)},
-                LevelUp: function(me){
-                    const c = me.config, revive = this.sprinkleRevive.bind(this);
-                    const pr = [];
-                    new Promise(res => {
+                resetAlignment: function(me){
+                    return new Promise(res => {
                         t.sprinkleBack.push(_ => {
                             const ball = me.ballX
                             if (Math.abs(ball.body.angle%360) < 10) {bs.rotate="";ball.body.angle=0;this.rotateBalls();res();return true}
                             bs.rotate="left";this.rotateBalls()
                         })
-                    }).then(_ => new Promise(res => {
+                    })
+                },
+                resetWalls: function(me){
+                    const c = me.config, total = c.moved;
+                    const kin = bool => wl.children.forEach(ch => {
+                        const b = ch.body
+                        b.setZeroVelocity()
+                        b.kinematic=bool
+                        b.fixedRotation = bool
+                        b.angle=0
+                    })
+                    return new Promise(res => {
+                        kin(true)
+                        t.sprinkleBack.push(_ => {
+                            if (!c.moved) {res();kin(false);return true}
+                            const speed = c.moved < 100?c.moved:Math.max(Math.pow(c.moved,.7),200)
+                            console.log("A",c.moved,"/",total,"=",speed)
+                            c.moved-=speed
+                            console.log("B",c.moved,"/",total,"=",speed)
+                            wl.children.forEach(b => {
+                                b.body.moveUp(speed)
+                            })
+                        })
+                    })
+                },
+                reviveBalls: function(){
+                    const me = this, pr = [], revive = this.sprinkleRevive.bind(this), c = me.config;
+                    return new Promise(res => {
                         me.ballX.alive || pr.push(revive(me.ballX,{x: c.W_OFFSET*(1-c.BALL_RAD), y:c.H_OFFSET}))
                         me.ballY.alive || pr.push(revive(me.ballY,{x: c.W_OFFSET*(1+c.BALL_RAD), y:c.H_OFFSET}))
                         Promise.all(pr).then(res)
-                    })).then(_ => {
+                    })
+                },
+                LevelUp: function(me){
+                    const c = me.config;
+                    this.resetAlignment(me).then(this.reviveBalls.bind(this)).then(_ => {
                         t.level++
                         t.w_spin = []
-                        this.resetGame.bind(this)()
                         game.complete = false
+                        this.resetGame.bind(this)()
                     })
                 },
                 ballSplat: function(x,y){
+                    const me = this
                     this.sprinkleDeath(x.sprite)
                     y.sprite.tint = x.sprite.tint
+                    game.complete = true
+                    Promise.all([this.resetAlignment(me), this.resetWalls(me)]).then(this.reviveBalls.bind(this))
+                    .then(_ => {
+                        t.w_spin = []
+                        game.complete = false
+                        this.resetGame.bind(this)()
+                    })
                     //wl.children.forEach(b => b.reset(b.position.x,b.position.y-this.config.moved))
                     //this.config.moved=0
                     //wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
