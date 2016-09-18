@@ -2,7 +2,8 @@
 h1,h2,h3 {font-family: "Poiret One";font-weight:200}
 canvas {height:100%;width:100%}</style><style is="custom-style">paper-toolbar {background-color: transparent;position:absolute;top:0;left:0;width:100%}
 paper-toolbar[nw] {top:2em}
-.scrubber {-webkit-app-region: drag}
+.scrubber {-webkit-app-region: drag;cursor: move}
+.scrubber {background-image: -webkit-repeating-radial-gradient(center center, rgba(0,0,0,.2), rgba(0,0,0,.2) 1px, transparent 1px, transparent 100%);background-image: -moz-repeating-radial-gradient(center center, rgba(0,0,0,.2), rgba(0,0,0,.2) 1px, transparent 1px, transparent 100%);background-image: -ms-repeating-radial-gradient(center center, rgba(0,0,0,.2), rgba(0,0,0,.2) 1px, transparent 1px, transparent 100%);background-image: repeating-radial-gradient(center center, rgba(0,0,0,.2), rgba(0,0,0,.2) 1px, transparent 1px, transparent 100%);-webkit-background-size: 3px 3px;-moz-background-size: 3px 3px;background-size: 3px 3px;}
 .nav-bar {background: rgba(255,255,255,.08);height: 2em;width: 100%;position:absolute;top:0;left:0;text-align:right}
 .nav-bar .btn {color:white;width: 4em;height:100%;text-align:center;display:inline-block;transition: background-color .25s}
 .nav-bar .btn > * {height:100%;padding: 6px}
@@ -34,20 +35,39 @@ if (t.isNodeWebkit) {
     t.getLevel = l => require("../levels/"+l+".json")
     t.nw = {gui: require('nw.gui')}
 } else {
-    t.getLevel = _ => ({
-        "walls": [
-            {"type": "left"},
-            //{"type": "center"},
-            //{"type": "spin"},
-            //{"type": "center"},
-            //{"type": "spin", "dir": 1},
-            //{"type": "left"},
-            //{"type": "right"},
-            //{"type": "left"},
-            {"type": "center"},
-        ],
-        "track": "/public/lv1.ogg"
-    })
+    t.getLevel = _ => {
+        if (_==1) {
+            return {
+                "walls": [
+                    {"type": "left"},
+                    {"type": "center"},
+                    //{"type": "spin"},
+                    //{"type": "center"},
+                    //{"type": "spin", "dir": 1},
+                    //{"type": "left"},
+                    //{"type": "right"},
+                    //{"type": "left"},
+                    {"type": "center"},
+                ],
+                "track": "/public/lv1.ogg"
+            }
+        } else {
+            return {
+                "walls": [
+                    {"type": "left"},
+                    {"type": "center"},
+                    {"type": "spin"},
+                    {"type": "center"},
+                    {"type": "spin", "dir": 1},
+                    {"type": "left"},
+                    {"type": "right"},
+                    {"type": "left"},
+                    {"type": "center"},
+                ],
+                "track": "/public/lv2.ogg"
+            }
+        }
+    }
 }
 t.setScore = s => {
     clearInterval(t.curInt)
@@ -233,16 +253,23 @@ t.gameSetup.prototype = {
     resetGame: function(){game.state.start("PlayGame",true,true)},
     LevelUp: function(me){
         const c = me.config, revive = this.sprinkleRevive.bind(this);
-        me.ballX.alive || revive(me.ballX,{x: c.W_OFFSET*(1-c.BALL_RAD), y:c.H_OFFSET})
-        me.ballY.alive || revive(me.ballY,{x: c.W_OFFSET*(1+c.BALL_RAD), y:c.H_OFFSET})
-        t.sprinkleBack.push(_ => {
-            const ball = me.ballX
-            if (Math.abs(ball.body.angle%360) < 10) {bs.rotate="";ball.body.angle=0;this.rotateBalls();return true}
-            bs.rotate="left";this.rotateBalls()
-            console.info("Angle Adjust",Math.abs(ball.body.angle%360))
+        const pr = [];
+        new Promise(res => {
+            t.sprinkleBack.push(_ => {
+                const ball = me.ballX
+                if (Math.abs(ball.body.angle%360) < 10) {bs.rotate="";ball.body.angle=0;this.rotateBalls();res();return true}
+                bs.rotate="left";this.rotateBalls()
+            })
+        }).then(_ => new Promise(res => {
+            me.ballX.alive || pr.push(revive(me.ballX,{x: c.W_OFFSET*(1-c.BALL_RAD), y:c.H_OFFSET}))
+            me.ballY.alive || pr.push(revive(me.ballY,{x: c.W_OFFSET*(1+c.BALL_RAD), y:c.H_OFFSET}))
+            Promise.all(pr).then(res)
+        })).then(_ => {
+            t.level++
+            t.w_spin = []
+            this.resetGame.bind(this)()
+            game.complete = false
         })
-        t.level++;
-        //t.gameSleep(1000).then(this.resetGame.bind(this))
     },
     ballSplat: function(x,y){
         this.sprinkleDeath(x.sprite)
@@ -252,47 +279,47 @@ t.gameSetup.prototype = {
         //wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
     },
     sprinkleRevive: function(x,p){
-        const c = this.config,color = '#'+Phaser.Color.componentToHex(x.tint),prt = this.particlesGroup;
-        const pr = [];var lowest = [-999,0];
-        ([]).make(25).forEach(i => {
-            var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
-            const b = ob.body, pos = {x:c.W_OFFSET+c.W_OFFSET*(0).rangeRandom(-.75, .75),y:(0).rangeRandom(-300,0)}
-            var l = false;
-            if (pos.y > lowest[0]) {lowest = [pos.y, i];l=true}
-            ob.reset(pos.x,pos.y)
-            ob.alpha = .8
-            ob.tint = x.tint
-            b.damping = 0.03
-            b.mass = .01
-            b.velocity.x = 0;b.velocity.y = 0
-            ob.anchor.set(.5,.5)
-            pr.push(new Promise(res => {
-                const HandleTween = _ => {
-                    const cpos = ob.position
-                    const angle = Math.atan2(cpos.y - p.y, cpos.x - p.x);
-                    const yspeed = (l?75:0)+300*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
-                    const xspeed = 300*Math.sqrt(Math.sqrt((cpos.x - p.x)/(pos.x - p.x)));
-                    console.log("Particle-"+i,"Distance:",((cpos.y - p.y)/(pos.y - p.y)),"|",t.distanceFormula(cpos,p))
-                    b.rotation = angle + game.math.degToRad(90);
-                    b.velocity.x = -Math.cos(angle) * xspeed;b.velocity.y = -Math.sin(angle) * yspeed
-                    if (t.distanceFormula(cpos,p) < 1) {b.velocity.x=b.velocity.y=0;ob.kill();res();return true}
-                }
-                t.sprinkleBack.push(HandleTween)
-            }))
-            //game.add.tween(ob.position).to({
-            //    x: p.x, y: p.y
-            //}, 2000, Phaser.Easing.Linear.None, true, 0, 0, true)
-        })
-        console.warn("LOWEST",lowest)
-        pr[lowest[1]].then(_ => {
-            x.reset(p.x,p.y)
-            x.scale.set(.1,.1)
-            game.add.tween(x.scale).from({x: 0, y: 0}).to({
-                x: 1, y: 1
-            }, 1250, Phaser.Easing.Linear.None, true, 0, 0, false);
-        })
-        Promise.all(pr).then(_ => {
-            
+        return new Promise(ress => {
+            const c = this.config,color = '#'+Phaser.Color.componentToHex(x.tint),prt = this.particlesGroup;
+            const pr = [];var lowest = [-999,0];
+            ([]).make(25).forEach(i => {
+                var ob = prt.getFirstExists(false) || prt.create(0, 0, c.MakeCircle(color,(0).rangeRandom(1,4)))
+                const b = ob.body, pos = {x:c.W_OFFSET+c.W_OFFSET*(0).rangeRandom(-.75, .75),y:(0).rangeRandom(-300,0)}
+                var l = false;
+                if (pos.y > lowest[0]) {lowest = [pos.y, i];l=true}
+                ob.reset(pos.x,pos.y)
+                ob.alpha = .8
+                ob.tint = x.tint
+                b.damping = 0.03
+                b.mass = .01
+                b.velocity.x = 0;b.velocity.y = 0
+                ob.anchor.set(.5,.5)
+                pr.push(new Promise(res => {
+                    const HandleTween = _ => {
+                        const cpos = ob.position
+                        const angle = Math.atan2(cpos.y - p.y, cpos.x - p.x);
+                        const yspeed = (l?75:0)+300*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
+                        const xspeed = 300*Math.sqrt(Math.sqrt((cpos.x - p.x)/(pos.x - p.x)));
+                        const dist = t.distanceFormula(cpos,p);
+                        //console.log("Particle-"+i,"Distance:",((cpos.y - p.y)/(pos.y - p.y)),"|",dist)
+                        b.rotation = angle + game.math.degToRad(90);
+                        b.velocity.x = -Math.cos(angle) * xspeed;b.velocity.y = -Math.sin(angle) * yspeed
+                        if (isNaN(dist) || dist < 1) {console.info("Particle-"+i,"DONE!");b.velocity.x=b.velocity.y=0;ob.kill();res();return true}
+                    }
+                    t.sprinkleBack.push(HandleTween)
+                }))
+                //game.add.tween(ob.position).to({
+                //    x: p.x, y: p.y
+                //}, 2000, Phaser.Easing.Linear.None, true, 0, 0, true)
+            })
+            pr[lowest[1]].then(_ => {
+                x.reset(p.x,p.y)
+                x.scale.set(.1,.1)
+                game.add.tween(x.scale).from({x: 0, y: 0}).to({
+                    x: 1, y: 1
+                }, 1250, Phaser.Easing.Linear.None, true, 0, 0, false);
+            })
+            Promise.all(pr).then(_ => console.info("Promise fulfilled",x==this.ballX?"X":"Y")).then(ress)
         })
     },
     sprinkleDeath: function(x){
