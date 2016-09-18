@@ -8,7 +8,7 @@
         {"type": "left"},
         {"type": "right"},
         {"type": "left"},
-        {"type": "center"},
+        {"type": "center"}
     ],
     "track": "/public/lv2.ogg"
 }
