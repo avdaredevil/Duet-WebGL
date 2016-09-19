@@ -199,7 +199,7 @@ html
                     const ANIM_ARGS = delay => [250, Phaser.Easing.Linear.None, true, 0, delay, true]
                     wl.children.forEach((ch,i) => game.add.tween(ch.scale).to({
                         x: 1.05, y: 1.15
-                    }, ...ANIM_ARGS(250*i)));
+                    }, ...ANIM_ARGS(250*(i+1))));
                     //game.add.tween(wl.position).to({
                     //    x: -100, y: -200
                     //}, ...ANIM_ARGS);
@@ -361,7 +361,7 @@ html
                 ballSplat: function(x,y){
                     const me = this
                     this.sprinkleDeath(x.sprite)
-                    t.vibrate([25,25])
+                    t.vibrate([25,25,25])
                     y.sprite.tint = x.sprite.tint
                     game.complete = true
                     Promise.all([this.resetAlignment(me), this.resetWalls(me)]).then(this.reviveBalls.bind(this))
