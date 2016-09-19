@@ -49,6 +49,8 @@ html
                 return str.join(' ');
             }
             var t = document.querySelector("#app"), game,bs,wl;
+            navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate || (_ => {})
+            t.vibrate = t => navigator.vibrate(t)
             t.isNodeWebkit = typeof require != "undefined"
             t.w_spin = [];t.sprinkleBack = []
             t.score = 0
@@ -69,17 +71,13 @@ html
                             "walls": [
                                 {"type": "left"},
                                 {"type": "center"},
-                                //{"type": "spin"},
-                                //{"type": "center"},
-                                //{"type": "spin", "dir": 1},
-                                //{"type": "left"},
-                                //{"type": "right"},
-                                //{"type": "left"},
-                                {"type": "center"},
+                                {"type": "left"},
+                                {"type": "left"},
+                                {"type": "right"}
                             ],
                             "track": "/public/lv1.ogg"
                         }
-                    } else {
+                    } else if (_==2) {
                         return {
                             "walls": [
                                 {"type": "left"},
@@ -93,6 +91,22 @@ html
                                 {"type": "center"},
                             ],
                             "track": "/public/lv2.ogg"
+                        }
+                    } else {
+                        return {
+                            "walls": [
+                                {"type": "narrow"},
+                                {"type": "center"},
+                                {"type": "spin"},
+                                {"type": "spin", "dir": 1},
+                                {"type": "center"},
+                                {"type": "center"},
+                                {"type": "narrow"},
+                                {"type": "narrow"},
+                                {"type": "left"},
+                                {"type": "right"}
+                            ],
+                            "track": "/public/lv1.ogg"
                         }
                     }
                 }
@@ -214,27 +228,36 @@ html
                 },
                 makeWalls: function(d,cg) {
                     //=MAKE=WALLS================================================|
-                    const c = this.config, W_W = c.W_OFFSET*1.05;
+                    const c = this.config, W_W = c.W_OFFSET*1.05, rad = 22;
                     t.track = d.track
                     const mk_sprite = (gr,ty,i) => {
                         const w_sprite = (w,h) => c.MakeRect(w,h)
-                        const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET}[t])
-                        const tra = {left: [W_W,30],right: [W_W,30],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,30]}
+                        const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2}[t])
+                        const tra = {left: [W_W,30],right: [W_W,30],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,30],narrow: [c.W_OFFSET-3*rad,30]}
                         const conf = tra[ty], h_off = c.H_OFFSET/4
                         if (!conf) {return}
                         const w = conf[0], h = conf[1]
                         const sprite = w_sprite(w,h)
                         const ob = gr.create(w_x(ty,w),h_off-i*c.PAD, sprite)
                         ob.body.setRectangle(w,h)
-                        return ob
+                        const obj = [ob]
+                        if (ty == "narrow") {
+                            const sprite2 = w_sprite(w,h)
+                            const ob = gr.create(w_x("right",w),h_off-i*c.PAD, sprite)
+                            ob.body.setRectangle(w,h)
+                            obj.push(ob)
+                        }
+                        return obj
                     }
                     //const block = s => c.MakeRect(W_W,s||30)
                     d.walls.forEach((w,i) => {
                         const W = mk_sprite(wl,w.type,i);if (!W) {return}
-                        W.body.setCollisionGroup(cg.WallCG)
-                        //W.body.kinematic=true // MAKES PASS_THRU
-                        W.body.collides([cg.WallCG,cg.BallCG])
-                        if (w.type == "spin") {W.body.angle = 10*i;t.w_spin.push([w.dir,W])}
+                        W.forEach(wl => {
+                            wl.body.setCollisionGroup(cg.WallCG)
+                            //W.body.kinematic=true // MAKES PASS_THRU
+                            wl.body.collides([cg.WallCG,cg.BallCG])
+                            if (w.type == "spin") {wl.body.angle = -10*i;t.w_spin.push([w.dir,wl])}
+                        })
                     })
                     //wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
                     //wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
@@ -250,7 +273,6 @@ html
                     if (pnt.isDown) {
                         c.cursor = true
                         bs.rotate = pnt.positionDown.x < c.W_OFFSET?"left":"right"
-                        console.log(bs.rotate)
                     } else if (c.cursor) {
                         c.cursor = false;bs.rotate = ""
                     }
@@ -259,11 +281,11 @@ html
                         if (f()) {delete t.sprinkleBack[i]}
                     })
                     t.sprinkleBack = t.sprinkleBack.filter(i=>i)
-                    if (bs.rotate) {this.rotateBalls()}
+                    if (!game.complete && bs.rotate) {this.rotateBalls()}
                     if (t.w_spin.length) {
                         t.w_spin.forEach(w => {
                             w[1].body.fixedRotation = false;
-                            w[1].body.angle+=(w[0] || -1)*.95
+                            w[1].body.angle+=(w[0] || -1)*.85
                         })
                     }
                     //=COMPLETED==================================|
@@ -339,6 +361,7 @@ html
                 ballSplat: function(x,y){
                     const me = this
                     this.sprinkleDeath(x.sprite)
+                    t.vibrate([25,25])
                     y.sprite.tint = x.sprite.tint
                     game.complete = true
                     Promise.all([this.resetAlignment(me), this.resetWalls(me)]).then(this.reviveBalls.bind(this))
