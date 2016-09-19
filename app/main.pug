@@ -92,7 +92,7 @@ html
                             ],
                             "track": "/public/lv2.ogg"
                         }
-                    } else {
+                    } else if (_==3) {
                         return {
                             "walls": [
                                 {"type": "narrow"},
@@ -104,6 +104,22 @@ html
                                 {"type": "narrow"},
                                 {"type": "narrow"},
                                 {"type": "left"},
+                                {"type": "right"}
+                            ],
+                            "track": "/public/lv1.ogg"
+                        }
+                    } else {
+                        return {
+                            "walls": [
+                                {"type": "narrow"},
+                                {"type": "center"},
+                                {"type": "spin", "dir": 1},
+                                {"type": "spin"},
+                                {"type": "spin"},
+                                {"type": "spin", "dir": 1},
+                                {"type": "spin", "dir": 1},
+                                {"type": "spin"},
+                                {"type": "narrow"},
                                 {"type": "right"}
                             ],
                             "track": "/public/lv1.ogg"
@@ -332,9 +348,7 @@ html
                         t.sprinkleBack.push(_ => {
                             if (!c.moved) {res();kin(false);return true}
                             const speed = c.moved < 100?c.moved:Math.max(Math.pow(c.moved,.7),200)
-                            console.log("A",c.moved,"/",total,"=",speed)
                             c.moved-=speed
-                            console.log("B",c.moved,"/",total,"=",speed)
                             wl.children.forEach(b => {
                                 b.body.moveUp(speed)
                             })
@@ -360,6 +374,7 @@ html
                 },
                 ballSplat: function(x,y){
                     const me = this
+                    //console.log(this.config.moved,wl.children.slice(-1)[0].position.y)
                     this.sprinkleDeath(x.sprite)
                     t.vibrate([25,25,25])
                     y.sprite.tint = x.sprite.tint
@@ -400,7 +415,7 @@ html
                                     //console.log("Particle-"+i,"Distance:",((cpos.y - p.y)/(pos.y - p.y)),"|",dist)
                                     b.rotation = angle + game.math.degToRad(90);
                                     b.velocity.x = -Math.cos(angle) * xspeed;b.velocity.y = -Math.sin(angle) * yspeed
-                                    if (isNaN(dist) || dist < 1) {console.info("Particle-"+i,"DONE!");b.velocity.x=b.velocity.y=0;ob.kill();res();return true}
+                                    if (isNaN(dist) || dist < 1) {/*console.info("Particle-"+i,"DONE!");*/b.velocity.x=b.velocity.y=0;ob.kill();res();return true}
                                 }
                                 t.sprinkleBack.push(HandleTween)
                             }))
@@ -411,9 +426,9 @@ html
                         pr[lowest[1]].then(_ => {
                             x.reset(p.x,p.y)
                             x.scale.set(.1,.1)
-                            game.add.tween(x.scale).from({x: 0, y: 0}).to({
+                            game.add.tween(x.scale).from({x: .1, y: .1}).to({
                                 x: 1, y: 1
-                            }, 1250, Phaser.Easing.Linear.None, true, 0, 0, false);
+                            }, 500, Phaser.Easing.Linear.None, true, 0, 1, false);
                         })
                         Promise.all(pr).then(_ => console.info("Promise fulfilled",x==this.ballX?"X":"Y")).then(ress)
                     })
