@@ -26,7 +26,7 @@ t.vibrate = t => navigator.vibrate(t)
 t.isNodeWebkit = typeof require != "undefined"
 t.w_spin = [];t.sprinkleBack = []
 t.score = 0
-t.level = 1
+t.level = 1 //TODO: Reset this
 t.track = "public/theme.ogg"
 t.round = n => Math.round(n)
 t.minimize = _ => t.nw?t.nw.gui.Window.get().minimize():alert("No can do minimizing!")
@@ -134,8 +134,11 @@ t.gameSetup.prototype = {
         this.disk = graphics.arc(0,0, W_OFFSET*BALL_RAD, 0, Math.PI*2, false);
         //=Export=======================|
         this.config = {
-            PAD: PAD,
             moved: 0,
+            SpinFunc: (d,x,it) => ((d||-1)*game.speed*.98*(x-it) + 90)%360,
+            ball_velocity: 332.7484130859375/100,
+            WALL_H: 30,
+            PAD: {basic: PAD, spin: 1.3*PAD},
             W_OFFSET: W_OFFSET,
             H_OFFSET: H_OFFSET,
             BALL_RAD: BALL_RAD,
@@ -218,45 +221,55 @@ t.gameSetup.prototype = {
         //=MAKE=WALLS================================================|
         const c = this.config, W_W = c.W_OFFSET*1.05, rad = 22;
         t.track = d.track
+        var pad = 0;
         const mk_sprite = (gr,ty,i) => {
             const w_sprite = (w,h) => c.MakeRect(w,h)
             const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2}[t])
-            const tra = {left: [W_W,30],right: [W_W,30],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,30],narrow: [c.W_OFFSET-3*rad,30]}
+            const tra = {left: [W_W,c.WALL_H],right: [W_W,c.WALL_H],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,c.WALL_H],narrow: [c.W_OFFSET-3*rad,c.WALL_H]}
             const conf = tra[ty], h_off = c.H_OFFSET/4
             if (!conf) {return}
             const w = conf[0], h = conf[1]
             const sprite = w_sprite(w,h)
-            const ob = gr.create(w_x(ty,w),h_off-i*c.PAD, sprite)
+            ty=="spin" && (pad+=c.PAD.spin-c.PAD.basic)
+            const ob = gr.create(w_x(ty,w),h_off-pad, sprite)
             ob.body.setRectangle(w,h)
             const obj = [ob]
             if (ty == "narrow") {
                 const sprite2 = w_sprite(w,h)
-                const ob = gr.create(w_x("right",w),h_off-i*c.PAD, sprite)
+                const ob = gr.create(w_x("right",w),h_off-pad, sprite)
                 ob.body.setRectangle(w,h)
                 obj.push(ob)
             }
+            pad += c.PAD[ty=="spin"?ty:"basic"]
             return obj
         }
-        //const block = s => c.MakeRect(W_W,s||30)
         d.walls.forEach((w,i) => {
             const W = mk_sprite(wl,w.type,i);if (!W) {return}
             W.forEach(wl => {
                 wl.body.setCollisionGroup(cg.WallCG)
                 //W.body.kinematic=true // MAKES PASS_THRU
                 wl.body.collides([cg.WallCG,cg.BallCG])
-                if (w.type == "spin") {wl.body.angle = -10*i;t.w_spin.push([w.dir,wl])}
+                if (w.type == "spin") {
+                    const iterations = (c.H_OFFSET - (wl.position.y+wl.width/2))/c.ball_velocity
+                    //console.log("Wall",i,"@",iterations,"iters")
+                    wl.body.angle = c.SpinFunc(0,iterations);
+                    t.w_spin.push([{dir: w.dir, iters: iterations},wl])
+                }
             })
         })
-        //wl.create(0,-30-1*c.PAD, c.MakeRect(W_W,30))
-        //wl.create(W_W*.9,-W_W*.15*2-(2-.2)*c.PAD, c.MakeRect(W_W*.1*2,W_W*.15*2))
-        //wl.create(0,-30-3*c.PAD, c.MakeRect(W_W,30))
-        //wl.create(0,-30-4*c.PAD, c.MakeRect(W_W,30))
-        //wl.create(game.width-W_W,-30-5*c.PAD, c.MakeRect(W_W,30))
     },
     update: function(){
         const c = this.config, pnt = game.input.activePointer;
+        const iter = c.moved/200
         game.complete || wl.children.forEach(b => b.body.moveDown(200))
         game.complete || (c.moved+=200)
+        //console.log(c.moved/200)
+        //=SPEED+CHECK===============================|
+        //if (!(iter%100)) {
+        //    const y = wl.children[0].position.y // = 332.7484130859375 @ 100iters
+        //    c.prev && console.log(y-c.prev)     // f(x = wl.pos.y) = 90deg
+        //    c.prev = y
+        //}
         //=CHECKS====================================|
         if (pnt.isDown) {
             c.cursor = true
@@ -272,8 +285,9 @@ t.gameSetup.prototype = {
         if (!game.complete && bs.rotate) {this.rotateBalls()}
         if (t.w_spin.length) {
             t.w_spin.forEach(w => {
+                //if (iter == 279) {throw "ah"}
                 w[1].body.fixedRotation = false;
-                w[1].body.angle+=(w[0] || -1)*.85
+                w[1].body.angle = c.SpinFunc(w[0].dir,iter,w[0].iters)
             })
         }
         //=COMPLETED==================================|
@@ -357,9 +371,6 @@ t.gameSetup.prototype = {
             game.complete = false
             this.resetGame.bind(this)()
         })
-        //wl.children.forEach(b => b.reset(b.position.x,b.position.y-this.config.moved))
-        //this.config.moved=0
-        //wl.children.forEach((w,i) => w.position.set(t.wlPos[i].x,t.wlPos[i].y))
     },
     sprinkleRevive: function(x,p){
         return new Promise(ress => {
