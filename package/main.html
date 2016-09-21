@@ -324,7 +324,7 @@ t.gameSetup.prototype = {
         const c = me.config, total = c.moved;
         const kin = bool => wl.children.forEach(ch => {
             const b = ch.body
-            b.setZeroVelocity()
+            b.setZeroVelocity();b.angularVelocity=0
             b.kinematic=bool
             b.fixedRotation = bool
             b.angle=0
