@@ -1,5 +1,6 @@
 "use strict";
 const gulp = require('gulp');
+const pug = require('pug');
 const vulcanize = require('gulp-vulcanize');
 const rename = require('gulp-rename');
 const $ = require('gulp-load-plugins')();
@@ -26,8 +27,7 @@ var imageOptimizeTask = function(src, dest) {
 var optimizeHtmlTask = function(src, dest) {
   return gulp.src(src)
     // Concatenate and minify JavaScript
-    .pipe($.if('*.js', $.uglify({preserveComments: 'some'})))
-    //.pipe($.if('*.js', babel({presets: ['es2015']})))
+    .pipe($.if('*.js', $.uglify({preserveComments: 'none'})))
     // Concatenate and minify styles
     // In case you are still using useref build blocks
     .pipe($.if('*.css', $.cleanCss()))
@@ -67,7 +67,7 @@ gulp.task('copy', function() {
 });
 gulp.task('images', function() {return imageOptimizeTask(['app/public/**/*.png','app/public/**/*.ico','app/public/**/*.jpg'], dist('public'))});
 gulp.task('html', function() {return optimizeHtmlTask(
-    ['app/*.html','!app/elements.html'],
+    ['app/*.html','!app/elements.html', dist("main.html")],
     dist())
 });
 gulp.task('pug', function() {
@@ -94,7 +94,7 @@ gulp.task('vulcanize', function() {
 });
 //=====================================================|
 gulp.task('watch', ()=>{
-    gulp.watch("app/*.pug", ['pug','html']);
+    gulp.watch("app/*.pug", 'pug');
 })
 gulp.task('clean', ()=>{
 	return gulp.src(['app/bower_components/elements.*',dist("elements.html")], {read: false})
