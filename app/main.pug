@@ -43,6 +43,7 @@ html
         script
             :uglify-js:babel
                 Array.prototype.make = function(s){return Array.apply(0, Array(s)).map((_,i) => i)}
+                Array.prototype.flatten = function(){const a=[];this.forEach(c => c instanceof Array?a.push(...c):a.push(c));return a}
                 Number.prototype.rangeRandom = function(min,max){return Math.random() * (max - min) + min}
                 String.prototype.titleCase = function(){
                     const str = this.toLowerCase().split(' ');
@@ -72,6 +73,7 @@ html
                         if (_==1) {
                             return {
                                 "walls": [
+                                    {"type": "snap"},
                                     {"type": "left"},
                                     {"type": "center"},
                                     {"type": "left"},
@@ -111,7 +113,7 @@ html
                                 ],
                                 "track": "/public/lv1.ogg"
                             }
-                        } else {
+                        } else if (_==4) {
                             return {
                                 "walls": [
                                     {"type": "narrow"},
@@ -122,6 +124,19 @@ html
                                     {"type": "spin", "dir": 1},
                                     {"type": "spin", "dir": 1},
                                     {"type": "spin"},
+                                    {"type": "narrow"},
+                                    {"type": "right"}
+                                ],
+                                "track": "/public/lv2.ogg"
+                            }
+                        } else {
+                            return {
+                                "walls": [
+                                    {"type": "snap"},
+                                    {"type": "center"},
+                                    {"type": "snap", "dir": 1},
+                                    {"type": "spin"},
+                                    {"type": "center"},
                                     {"type": "narrow"},
                                     {"type": "right"}
                                 ],
@@ -142,7 +157,6 @@ html
                         const H_OFFSET = game.height*.875, W_OFFSET = game.world.centerX, PAD = 150, BALL_RAD = .22
                         //game.stage.backgroundColor = 'rgba(0,0,0,.9)'
                         const MakeRect = (w,h) => {
-                            var drawnObject;
                             var bmd = game.add.bitmapData(w, h);
                             bmd.ctx.beginPath();
                             bmd.ctx.rect(0, 0, w, h);
@@ -253,12 +267,12 @@ html
                         const c = this.config, W_W = c.W_OFFSET*1.05, rad = 22;
                         t.track = d.track
                         var pad = 0;
-                        const mk_sprite = (gr,ty,i) => {
+                        const mk_sprite = (gr,ty,i,W) => {
                             const w_sprite = (w,h) => c.MakeRect(w,h)
-                            const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2}[t])
-                            const tra = {left: [W_W,c.WALL_H],right: [W_W,c.WALL_H],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,c.WALL_H],narrow: [c.W_OFFSET-3*rad,c.WALL_H]}
+                            const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2, snap: 0+w/2, "snap_2nd.0": c.W_OFFSET-2*rad+10+w/2}[t])
+                            const tra = {left: [W_W,c.WALL_H],right: [W_W,c.WALL_H],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,c.WALL_H],narrow: [c.W_OFFSET-3*rad,c.WALL_H], snap: [c.W_OFFSET-2*rad,c.WALL_H]}
                             const conf = tra[ty], h_off = c.H_OFFSET/4
-                            if (!conf) {return}
+                            if (!conf) {console.warn("[WALL-MAKER]","No type defined as",ty);return}
                             const w = conf[0], h = conf[1]
                             const sprite = w_sprite(w,h)
                             ty=="spin" && (pad+=c.PAD.spin-c.PAD.basic)
@@ -270,12 +284,29 @@ html
                                 const ob = gr.create(w_x("right",w),h_off-pad, sprite)
                                 ob.body.setRectangle(w,h)
                                 obj.push(ob)
+                            } else if (ty == "snap") {
+                                const y = c.WALL_H/2, x = 3*rad/2, pol = [
+                                    [-x, y],
+                                    [-.5*x, 0],
+                                    [-x, -y],
+                                    [.5*x, -y],
+                                    [x, 0],
+                                    [.5*x, y]
+                                ], polygon = new Phaser.Polygon(pol.flatten());
+                                var bmd = game.add.graphics(0, 0);
+                                bmd.beginFill(0xffffff)
+                                bmd.drawPolygon(polygon.points);
+                                bmd.endFill();
+                                const ob = gr.create(w_x("snap_2nd."+(W.dir||0),x*2),h_off-pad, bmd.generateTexture())
+                                bmd.destroy()
+                                ob.body.addPolygon({}, pol);
+                                obj.push(ob)
                             }
                             pad += c.PAD[ty=="spin"?ty:"basic"]
                             return obj
                         }
                         d.walls.forEach((w,i) => {
-                            const W = mk_sprite(wl,w.type,i);if (!W) {return}
+                            const W = mk_sprite(wl,w.type,i,w);if (!W) {return}
                             W.forEach(wl => {
                                 wl.body.setCollisionGroup(cg.WallCG)
                                 //W.body.kinematic=true // MAKES PASS_THRU
@@ -423,7 +454,7 @@ html
                                     const HandleTween = _ => {
                                         const cpos = ob.position
                                         const angle = Math.atan2(cpos.y - p.y, cpos.x - p.x);
-                                        const yspeed = (l?75:0)+400*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
+                                        const yspeed = (l?75:0)+(0).rangeRandom(-15, 15)+400*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
                                         const xspeed = 400*Math.sqrt(Math.sqrt((cpos.x - p.x)/(pos.x - p.x)));
                                         const dist = t.distanceFormula(cpos,p);
                                         //console.log("Particle-"+i,"Distance:",((cpos.y - p.y)/(pos.y - p.y)),"|",dist)
@@ -465,7 +496,7 @@ html
                         })
                         x.kill()
                     },
-                    //render: function(){[this.particlesGroup,wl,bs].forEach(c => c.children.forEach(ch => ch.body.debug=true))}
+                    render: function(){[this.particlesGroup,wl,bs].forEach(c => c.children.forEach(ch => ch.body.debug=true))}
                 }
                 window.onload = function() {
                     game = t.g = new Phaser.Game(640, 960, Phaser.AUTO, "", undefined, true);

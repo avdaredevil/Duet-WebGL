@@ -94,17 +94,22 @@ gulp.task('vulcanize', function() {
 });
 //=====================================================|
 gulp.task('watch', ()=>{
-    gulp.watch("app/*.pug", 'pug');
+    gulp.watch("app/*.pug", ['pug']);
 })
 gulp.task('clean', ()=>{
 	return gulp.src(['app/bower_components/elements.*',dist("elements.html")], {read: false})
 		.pipe(clean());
 })
 //=====================================================|
+gulp.task('restore', function(cb) {
+    runSequence(
+        ['pug','images', 'vulcanize'],
+        'html', 'watch',
+    cb)
+})
 gulp.task('default', ['clean'], function(cb) {
     runSequence(
         'copy',
-        ['pug','images', 'vulcanize'],
-        'html', 'watch',
+        'restore',
     cb);
 });
