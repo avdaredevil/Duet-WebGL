@@ -94,7 +94,7 @@ gulp.task('vulcanize', function() {
 });
 //=====================================================|
 gulp.task('watch', ()=>{
-    gulp.watch("app/*.pug", ['pug']);
+    gulp.watch("app/*.pug", ['pug','html']);
 })
 gulp.task('clean', ()=>{
 	return gulp.src(['app/bower_components/elements.*',dist("elements.html")], {read: false})

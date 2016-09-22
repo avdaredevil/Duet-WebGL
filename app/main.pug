@@ -159,6 +159,7 @@ html
                     //=Circle=======================|
                     var graphics = game.add.graphics(W_OFFSET, H_OFFSET);
                     graphics.lineStyle(1, 0x868686);
+                    graphics.alpha = .5;
                     this.disk = graphics.arc(0,0, W_OFFSET*BALL_RAD, 0, Math.PI*2, false);
                     //=Export=======================|
                     this.config = {
@@ -236,7 +237,6 @@ html
                         b.body.setCollisionGroup(this.BallCG)
                         b.body.collides([this.WallCG,this.BallCG])
                         b.anchor.set(.5,.5);b.body.kinematic=true
-                        //b.body.collides(this.WallCG,this.ballSplat)
                         b.body.createGroupCallback(this.WallCG,this.ballSplat,this)
                     })
                     app.c = this
@@ -353,7 +353,7 @@ html
                     const kin = bool => wl.children.forEach(ch => {
                         const b = ch.body
                         b.setZeroVelocity();b.angularVelocity=0
-                        b.kinematic=bool
+                        b.kinematic = bool
                         b.fixedRotation = bool
                         b.angle=0
                     })
@@ -388,10 +388,10 @@ html
                 },
                 ballSplat: function(x,y){
                     const me = this
-                    //console.log(this.config.moved,wl.children.slice(-1)[0].position.y)
                     this.sprinkleDeath(x.sprite)
                     t.vibrate([25,25,25])
                     y.sprite.tint = x.sprite.tint
+                    //const wall = {y: y.position.y+y.height/2, x: y.position.x+y.width/2}
                     game.complete = true
                     Promise.all([this.resetAlignment(me), this.resetWalls(me)]).then(this.reviveBalls.bind(this))
                     .then(_ => {
@@ -420,8 +420,8 @@ html
                                 const HandleTween = _ => {
                                     const cpos = ob.position
                                     const angle = Math.atan2(cpos.y - p.y, cpos.x - p.x);
-                                    const yspeed = (l?75:0)+300*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
-                                    const xspeed = 300*Math.sqrt(Math.sqrt((cpos.x - p.x)/(pos.x - p.x)));
+                                    const yspeed = (l?75:0)+400*Math.sqrt(Math.sqrt((cpos.y - p.y)/(pos.y - p.y)));
+                                    const xspeed = 400*Math.sqrt(Math.sqrt((cpos.x - p.x)/(pos.x - p.x)));
                                     const dist = t.distanceFormula(cpos,p);
                                     //console.log("Particle-"+i,"Distance:",((cpos.y - p.y)/(pos.y - p.y)),"|",dist)
                                     b.rotation = angle + game.math.degToRad(90);
