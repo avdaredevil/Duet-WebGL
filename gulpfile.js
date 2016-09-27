@@ -14,6 +14,11 @@ const DIST = 'package';
 var dist = function(subpath) {
     return !subpath?DIST:path.join(DIST, subpath);
 };
+function swallowError (error) {
+  // If you want details of the error in the console
+  console.log("ERROR",error.toString())
+  this.emit('end')
+}
 //=====================================================|
 var imageOptimizeTask = function(src, dest) {
   return gulp.src(src)
@@ -73,6 +78,7 @@ gulp.task('html', function() {return optimizeHtmlTask(
 gulp.task('pug', function() {
     return gulp.src(["app/*.pug"])
         .pipe($.pug())
+        .on('error', swallowError)
         .pipe(gulp.dest(dist()))
 })
 gulp.task('vulcanize', function() {

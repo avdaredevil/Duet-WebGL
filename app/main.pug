@@ -56,9 +56,9 @@ html
                 navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate || (_ => {})
                 t.vibrate = t => navigator.vibrate(t)
                 t.isNodeWebkit = typeof require != "undefined"
-                t.w_spin = [];t.sprinkleBack = []
+                t.w_spin = [];t.w_snap = [];t.sprinkleBack = []
                 t.score = 0
-                t.level = 1 //TODO: Reset this
+                t.level = 3 //TODO: Reset this
                 t.track = "public/theme.ogg"
                 t.round = n => Math.round(n)
                 t.minimize = _ => t.nw?t.nw.gui.Window.get().minimize():alert("No can do minimizing!")
@@ -173,6 +173,16 @@ html
                             bmd.ctx.closePath();
                             bmd.ctx.fill();return bmd
                         }
+                        const MakePolygon = p => {
+                            const polygon = new Phaser.Polygon(p.flatten())
+                            const bmd = game.add.graphics(0, 0);
+                            bmd.beginFill(0xffffff)
+                            bmd.drawPolygon(polygon.points);
+                            bmd.endFill();
+                            const t = bmd.generateTexture()
+                            bmd.destroy()
+                            return t
+                        }
                         //=Circle=======================|
                         var graphics = game.add.graphics(W_OFFSET, H_OFFSET);
                         graphics.lineStyle(1, 0x868686);
@@ -182,6 +192,7 @@ html
                         this.config = {
                             moved: 0,
                             SpinFunc: (d,x,it) => ((d||-1)*game.speed*.98*(x-it) + 90)%360,
+                            SnapFunc: (d,x,it) => -1*(d||-1)*Number(x>it),
                             ball_velocity: 332.7484130859375/100,
                             WALL_H: 30,
                             PAD: {basic: PAD, spin: 1.3*PAD},
@@ -190,6 +201,7 @@ html
                             BALL_RAD: BALL_RAD,
                             MakeRect: MakeRect,
                             MakeCircle: MakeCircle,
+                            MakePolygon: MakePolygon,
                         }
                     },
                     keyBindings: function(){
@@ -269,45 +281,49 @@ html
                         var pad = 0;
                         const mk_sprite = (gr,ty,i,W) => {
                             const w_sprite = (w,h) => c.MakeRect(w,h)
-                            const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2, snap: 0+w/2, "snap_2nd.0": c.W_OFFSET-2*rad+10+w/2}[t])
+                            const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2, snap: 0+w/2, "snap_2nd.0": c.W_OFFSET-3*rad/2+w/2}[t])
                             const tra = {left: [W_W,c.WALL_H],right: [W_W,c.WALL_H],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,c.WALL_H],narrow: [c.W_OFFSET-3*rad,c.WALL_H], snap: [c.W_OFFSET-2*rad,c.WALL_H]}
                             const conf = tra[ty], h_off = c.H_OFFSET/4
                             if (!conf) {console.warn("[WALL-MAKER]","No type defined as",ty);return}
                             const w = conf[0], h = conf[1]
                             const sprite = w_sprite(w,h)
-                            ty=="spin" && (pad+=c.PAD.spin-c.PAD.basic)
-                            const ob = gr.create(w_x(ty,w),h_off-pad, sprite)
-                            ob.body.setRectangle(w,h)
+                            const extra_space_block = ["spin","snap"].indexOf(ty)+1;
+                            extra_space_block && (pad+=c.PAD.spin-c.PAD.basic)
+                            var ob = gr.create(w_x(ty,w),h_off-pad, sprite)
                             const obj = [ob]
                             if (ty == "narrow") {
                                 const sprite2 = w_sprite(w,h)
-                                const ob = gr.create(w_x("right",w),h_off-pad, sprite)
-                                ob.body.setRectangle(w,h)
-                                obj.push(ob)
+                                const ob2 = gr.create(w_x("right",w),h_off-pad, sprite)
+                                ob2.body.setRectangle(w,h)
+                                obj.push(ob2)
                             } else if (ty == "snap") {
-                                const y = c.WALL_H/2, x = 3*rad/2, pol = [
+                                const y = c.WALL_H/2, x = 3*rad/2, xp = (c.W_OFFSET-x-10)/2, pol_p = [
+                                    [-xp,y],
+                                    [-xp,-y],
+                                    [xp-.5*x,-y],
+                                    [xp,0],
+                                    [xp-.5*x,y],
+                                ], pol_s = [
                                     [-x, y],
                                     [-.5*x, 0],
                                     [-x, -y],
                                     [.5*x, -y],
                                     [x, 0],
                                     [.5*x, y]
-                                ], polygon = new Phaser.Polygon(pol.flatten());
-                                var bmd = game.add.graphics(0, 0);
-                                bmd.beginFill(0xffffff)
-                                bmd.drawPolygon(polygon.points);
-                                bmd.endFill();
-                                const ob = gr.create(w_x("snap_2nd."+(W.dir||0),x*2),h_off-pad, bmd.generateTexture())
-                                bmd.destroy()
-                                ob.body.addPolygon({}, pol);
-                                obj.push(ob)
+                                ], bl = c.MakePolygon(pol_p), shoot = c.MakePolygon(pol_s);
+                                ob.destroy()
+                                ob = gr.create(w_x(W.dir?"right":"left",xp*2),h_off-pad, bl)
+                                ob.body.addPolygon({}, pol_p);
+                                const ob2 = gr.create(w_x("snap_2nd."+(W.dir||0),x*2),h_off-pad, shoot)
+                                ob2.body.addPolygon({}, pol_s);
+                                obj.pop();obj.push(ob);obj.push(ob2)
                             }
-                            pad += c.PAD[ty=="spin"?ty:"basic"]
+                            pad += c.PAD[extra_space_block?"spin":"basic"]
                             return obj
                         }
                         d.walls.forEach((w,i) => {
                             const W = mk_sprite(wl,w.type,i,w);if (!W) {return}
-                            W.forEach(wl => {
+                            W.forEach((wl,ix) => {
                                 wl.body.setCollisionGroup(cg.WallCG)
                                 //W.body.kinematic=true // MAKES PASS_THRU
                                 wl.body.collides([cg.WallCG,cg.BallCG])
@@ -316,6 +332,9 @@ html
                                     //console.log("Wall",i,"@",iterations,"iters")
                                     wl.body.angle = c.SpinFunc(0,iterations);
                                     t.w_spin.push([{dir: w.dir, iters: iterations},wl])
+                                } else if (w.type == "snap" && ix) {
+                                    const iterations = (c.H_OFFSET - wl.position.y)/c.ball_velocity
+                                    t.w_snap.push([{dir: w.dir, iters: iterations, x: wl.position.x},wl])
                                 }
                             })
                         })
@@ -347,9 +366,17 @@ html
                         if (!game.complete && bs.rotate) {this.rotateBalls()}
                         if (t.w_spin.length) {
                             t.w_spin.forEach(w => {
-                                //if (iter == 279) {throw "ah"}
                                 w[1].body.fixedRotation = false;
                                 w[1].body.angle = c.SpinFunc(w[0].dir,iter,w[0].iters)
+                            })
+                        }
+                        if (t.w_snap.length) {
+                            t.w_snap.forEach(w => {
+                                if (!w[1].body) {return}
+                                const SNAP_LENGTH = c.BALL_RAD*c.W_OFFSET
+                                const open = c.SnapFunc(w[0].dir,iter,w[0].iters),
+                                    nl = w[0].x+open*SNAP_LENGTH, b = w[1].body
+                                if (b.x != nl) {game.add.tween(w[1].body).to({x: nl}, 50, Phaser.Easing.None, true)}
                             })
                         }
                         //=COMPLETED==================================|
@@ -411,11 +438,14 @@ html
                             Promise.all(pr).then(res)
                         })
                     },
+                    resetVars: function(){
+                        t.w_spin = [];t.w_snap = []
+                    },
                     LevelUp: function(me){
                         const c = me.config;
                         this.resetAlignment(me).then(this.reviveBalls.bind(this)).then(_ => {
                             t.level++
-                            t.w_spin = []
+                            this.resetVars()
                             game.complete = false
                             this.resetGame.bind(this)()
                         })

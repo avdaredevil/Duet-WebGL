@@ -1,4 +1,3 @@
-gv;exit
 cc php,bower,Node-Extensions
 function global:server {start cmd "/c cd package& php -S localhost:8080"}
 function global:game {nw .}
