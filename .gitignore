@@ -2,6 +2,9 @@
 logs
 *.log
 npm-debug.log*
+*.nw
+
+final/
 
 # Runtime data
 pids

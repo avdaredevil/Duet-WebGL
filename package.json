@@ -51,5 +51,6 @@
     "url": "https://github.com/Max00355/Duet/issues"
   },
   "homepage": "https://github.com/Max00355/Duet#readme",
+  "include_dirs": ["levels"],
   "dependencies": {}
 }
