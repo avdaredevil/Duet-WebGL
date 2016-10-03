@@ -10,5 +10,5 @@
         {"type": "left"},
         {"type": "center"}
     ],
-    "track": "/public/lv1.ogg"
+    "track": "public/lv1.ogg"
 }

@@ -56,9 +56,10 @@ html
                 navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate || (_ => {})
                 t.vibrate = t => navigator.vibrate(t)
                 t.isNodeWebkit = typeof require != "undefined"
+                t.debug = false
                 t.w_spin = [];t.w_snap = [];t.sprinkleBack = []
                 t.score = 0
-                t.level = 3 //TODO: Reset this
+                t.level = 1 //TODO: Reset this
                 t.track = "public/theme.ogg"
                 t.round = n => Math.round(n)
                 t.minimize = _ => t.nw?t.nw.gui.Window.get().minimize():alert("No can do minimizing!")
@@ -73,14 +74,13 @@ html
                         if (_==1) {
                             return {
                                 "walls": [
-                                    {"type": "snap"},
                                     {"type": "left"},
                                     {"type": "center"},
                                     {"type": "left"},
                                     {"type": "left"},
                                     {"type": "right"}
                                 ],
-                                "track": "/public/lv1.ogg"
+                                "track": "public/lv1.ogg"
                             }
                         } else if (_==2) {
                             return {
@@ -95,7 +95,7 @@ html
                                     {"type": "left"},
                                     {"type": "center"},
                                 ],
-                                "track": "/public/lv1.ogg"
+                                "track": "public/lv1.ogg"
                             }
                         } else if (_==3) {
                             return {
@@ -111,7 +111,7 @@ html
                                     {"type": "left"},
                                     {"type": "right"}
                                 ],
-                                "track": "/public/lv1.ogg"
+                                "track": "public/lv1.ogg"
                             }
                         } else if (_==4) {
                             return {
@@ -127,7 +127,7 @@ html
                                     {"type": "narrow"},
                                     {"type": "right"}
                                 ],
-                                "track": "/public/lv2.ogg"
+                                "track": "public/lv2.ogg"
                             }
                         } else {
                             return {
@@ -136,11 +136,17 @@ html
                                     {"type": "center"},
                                     {"type": "snap", "dir": 1},
                                     {"type": "spin"},
+                                    {"type": "snap"},
+                                    {"type": "spin"},
+                                    {"type": "spin", "dir": 1},
+                                    {"type": "snap", "dir": 1},
+                                    {"type": "spin"},
+                                    {"type": "snap"},
                                     {"type": "center"},
                                     {"type": "narrow"},
                                     {"type": "right"}
                                 ],
-                                "track": "/public/lv2.ogg"
+                                "track": "public/lv2.ogg"
                             }
                         }
                     }
@@ -281,8 +287,8 @@ html
                         var pad = 0;
                         const mk_sprite = (gr,ty,i,W) => {
                             const w_sprite = (w,h) => c.MakeRect(w,h)
-                            const w_x = (t,w) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2, snap: 0+w/2, "snap_2nd.0": c.W_OFFSET-3*rad/2+w/2}[t])
-                            const tra = {left: [W_W,c.WALL_H],right: [W_W,c.WALL_H],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,c.WALL_H],narrow: [c.W_OFFSET-3*rad,c.WALL_H], snap: [c.W_OFFSET-2*rad,c.WALL_H]}
+                            const w_x = (t,w,w2) => ({left: 0+w/2, right: game.width-w/2, center: c.W_OFFSET, spin: c.W_OFFSET, narrow: 0+w/2, snap: 0+w/2, "snap_2nd.0": w+w2/2+1, "snap_2nd.1": game.width-w-w2/2-1}[t])
+                            const tra = {left: [W_W,c.WALL_H],right: [W_W,c.WALL_H],center: [c.W_OFFSET*.15,c.W_OFFSET*.15],spin: [c.W_OFFSET*.45,c.WALL_H],narrow: [c.W_OFFSET-3*rad,c.WALL_H], snap: [1.2*c.W_OFFSET-3.5*rad,c.WALL_H]}
                             const conf = tra[ty], h_off = c.H_OFFSET/4
                             if (!conf) {console.warn("[WALL-MAKER]","No type defined as",ty);return}
                             const w = conf[0], h = conf[1]
@@ -297,7 +303,7 @@ html
                                 ob2.body.setRectangle(w,h)
                                 obj.push(ob2)
                             } else if (ty == "snap") {
-                                const y = c.WALL_H/2, x = 3*rad/2, xp = (c.W_OFFSET-x-10)/2, pol_p = [
+                                const y = c.WALL_H/2, x = 3.5*rad/2, xp = (c.W_OFFSET-x*2)/2, pol_p = [
                                     [-xp,y],
                                     [-xp,-y],
                                     [xp-.5*x,-y],
@@ -314,8 +320,9 @@ html
                                 ob.destroy()
                                 ob = gr.create(w_x(W.dir?"right":"left",xp*2),h_off-pad, bl)
                                 ob.body.addPolygon({}, pol_p);
-                                const ob2 = gr.create(w_x("snap_2nd."+(W.dir||0),x*2),h_off-pad, shoot)
+                                const ob2 = gr.create(w_x("snap_2nd."+(W.dir||0),xp*2,x*2),h_off-pad, shoot)
                                 ob2.body.addPolygon({}, pol_s);
+                                W.dir && (ob.body.angle = ob2.body.angle = 180)
                                 obj.pop();obj.push(ob);obj.push(ob2)
                             }
                             pad += c.PAD[extra_space_block?"spin":"basic"]
@@ -373,7 +380,7 @@ html
                         if (t.w_snap.length) {
                             t.w_snap.forEach(w => {
                                 if (!w[1].body) {return}
-                                const SNAP_LENGTH = c.BALL_RAD*c.W_OFFSET
+                                const SNAP_LENGTH = 1.75*c.BALL_RAD*c.W_OFFSET
                                 const open = c.SnapFunc(w[0].dir,iter,w[0].iters),
                                     nl = w[0].x+open*SNAP_LENGTH, b = w[1].body
                                 if (b.x != nl) {game.add.tween(w[1].body).to({x: nl}, 50, Phaser.Easing.None, true)}
@@ -494,16 +501,13 @@ html
                                     }
                                     t.sprinkleBack.push(HandleTween)
                                 }))
-                                //game.add.tween(ob.position).to({
-                                //    x: p.x, y: p.y
-                                //}, 2000, Phaser.Easing.Linear.None, true, 0, 0, true)
                             })
                             pr[lowest[1]].then(_ => {
                                 x.reset(p.x,p.y)
                                 x.scale.set(.1,.1)
                                 game.add.tween(x.scale).from({x: .1, y: .1}).to({
                                     x: 1, y: 1
-                                }, 500, Phaser.Easing.Linear.None, true, 0, 1, false);
+                                }, 50, Phaser.Easing.Linear.None, true);
                             })
                             Promise.all(pr).then(_ => console.info("Promise fulfilled",x==this.ballX?"X":"Y")).then(ress)
                         })
@@ -526,7 +530,7 @@ html
                         })
                         x.kill()
                     },
-                    render: function(){[this.particlesGroup,wl,bs].forEach(c => c.children.forEach(ch => ch.body.debug=true))}
+                    render: function(){t.debug && [this.particlesGroup,wl,bs].forEach(c => c.children.forEach(ch => ch.body.debug=true))}
                 }
                 window.onload = function() {
                     game = t.g = new Phaser.Game(640, 960, Phaser.AUTO, "", undefined, true);

@@ -12,7 +12,7 @@
     "duet"
   ],
   "window": {
-    "icon": "icon.ico",
+    "icon": "./package/icon.png",
     "toolbar": true,
     "frame": false,
     "width": 400,

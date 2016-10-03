@@ -1,13 +1,16 @@
 {
     "walls": [
-        {"type": "narrow"},
+        {"type": "snap"},
         {"type": "center"},
-        {"type": "spin", "dir": 1},
+        {"type": "snap", "dir": 1},
         {"type": "spin"},
+        {"type": "snap"},
         {"type": "spin"},
         {"type": "spin", "dir": 1},
-        {"type": "spin", "dir": 1},
+        {"type": "snap", "dir": 1},
         {"type": "spin"},
+        {"type": "snap"},
+        {"type": "center"},
         {"type": "narrow"},
         {"type": "right"}
     ],

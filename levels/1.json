@@ -6,5 +6,5 @@
         {"type": "left"},
         {"type": "right"}
     ],
-    "track": "/public/lv1.ogg"
+    "track": "public/lv1.ogg"
 }
