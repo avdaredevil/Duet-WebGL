@@ -20,6 +20,7 @@
   - `Left`
   - `Right`
   - `Center`
+  - `Narrow`
   - `Spin` [*Optional: `Direction` Attribute*]
   - `Snap` [*Optional: `Direction` Attribute*]
 - Maps loaded off static JSON files
