@@ -1,6 +1,9 @@
 # About
 > WebGL Version of Duet, very powerful! Inspired from the [original game](http://www.duetgame.com/)!
 
+## See it live!
+> Demo: https://avdaredevil.github.com/Duet-WebGL
+
 ## Technologies:
 > 
 #### `Node-Webkit`
