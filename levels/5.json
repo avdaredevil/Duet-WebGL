@@ -1,0 +1,18 @@
+{
+    "walls": [
+        {"type": "snap"},
+        {"type": "center"},
+        {"type": "snap", "dir": 1},
+        {"type": "spin"},
+        {"type": "snap"},
+        {"type": "spin"},
+        {"type": "spin", "dir": 1},
+        {"type": "snap", "dir": 1},
+        {"type": "spin"},
+        {"type": "snap"},
+        {"type": "center"},
+        {"type": "narrow"},
+        {"type": "right"}
+    ],
+    "track": "public/lv2.ogg"
+}
