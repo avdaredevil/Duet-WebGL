@@ -25,7 +25,7 @@ html
                 .nav-bar .btn > * {height:100%;padding: 6px}
                 .nav-bar .close.btn:hover {background:#c62828}
                 .nav-bar .min.btn:hover {background:rgba(255,255,255,.21)}
-                .creator {position: absolute;bottom: 0;font-family: Poiret One;color: rgba(255, 255, 255, 0.11);font-size: .8em;right: 5px;transition: color .25s}
+                .creator {position: absolute;bottom: 0;font-family: Poiret One;color: rgba(255, 255, 255,.18);font-size: .8em;right: 5px;transition: color .25s}
                 .creator:hover {color: rgba(255, 255, 255, 0.41)}
                 .creator a {text-decoration:none;color:inherit}
         template#app(is="dom-bind")
@@ -537,3 +537,4 @@ html
                     game.state.add("PlayGame", t.gameSetup);
                     game.state.start("PlayGame");
                 }
+                // TODO: Add google analytics to page
