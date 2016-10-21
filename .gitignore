@@ -1,10 +1,4 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-*.nw
-
-final/
+app/
 
 # Runtime data
 pids
