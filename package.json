@@ -2,7 +2,7 @@
   "name": "duet-webgl",
   "version": "1.0.0",
   "description": "Duet game written with WebGL",
-  "main": "package/main.html",
+  "main": "game/index.html",
   "node-remote": "http://localhost",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
     "duet"
   ],
   "window": {
-    "icon": "./package/icon.png",
+    "icon": "./game/icon.png",
     "toolbar": true,
     "frame": false,
     "width": 400,

@@ -5,7 +5,7 @@
     "Apoorv Verma [AP] <avdaredevil@gmail.com>"
   ],
   "description": "duet written in WebGL!",
-  "main": "main.html",
+  "main": "index.html",
   "keywords": [
     "game",
     "webgl",
