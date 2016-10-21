@@ -99,11 +99,11 @@ gulp.task('vulcanize', function() {
         .pipe($.size({title: 'vulcanize'}));
 });
 //=====================================================|
-gulp.task('watch', ()=>{
+gulp.task('watch', _ => {
     gulp.watch("app/*.pug", ['pug']);
 })
-gulp.task('clean', ()=>{
-	return gulp.src(['app/bower_components/elements.*',dist("elements.html")], {read: false})
+gulp.task('clean', _ => {
+	return gulp.src(['app/bower_components/elements*',dist("elements.html")], {read: false})
 		.pipe(clean());
 })
 //=====================================================|
