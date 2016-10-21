@@ -51,6 +51,10 @@
     "url": "https://github.com/Max00355/Duet/issues"
   },
   "homepage": "https://github.com/Max00355/Duet#readme",
-  "include_dirs": ["levels"],
-  "dependencies": {}
+  "include_dirs": [
+    "levels"
+  ],
+  "dependencies": {
+    "gulp-clean-css": "^2.0.13"
+  }
 }

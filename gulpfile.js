@@ -72,7 +72,7 @@ gulp.task('copy', function() {
 });
 gulp.task('images', function() {return imageOptimizeTask(['app/public/**/*.png','app/public/**/*.ico','app/public/**/*.jpg'], dist('public'))});
 gulp.task('html', function() {return optimizeHtmlTask(
-    ['app/*.html','!app/elements.html', dist("main.html")],
+    ['app/*.html','!app/elements.html'],
     dist())
 });
 gulp.task('pug', function() {
