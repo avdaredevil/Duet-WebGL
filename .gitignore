@@ -4,7 +4,7 @@ logs
 npm-debug.log*
 *.nw
 
-final/
+game/
 
 # Runtime data
 pids

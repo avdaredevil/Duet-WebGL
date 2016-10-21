@@ -10,7 +10,7 @@ const minifyInline = require('gulp-minify-inline')
 const path = require('path');
 const clean = require('gulp-clean');
  
-const DIST = 'package';
+const DIST = 'game';
 var dist = function(subpath) {
     return !subpath?DIST:path.join(DIST, subpath);
 };
