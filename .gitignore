@@ -3,8 +3,8 @@ logs
 *.log
 npm-debug.log*
 *.nw
-
 game/
+
 
 # Runtime data
 pids
