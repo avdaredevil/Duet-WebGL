@@ -9,7 +9,7 @@
 </p>
 
 ## See it live!
-> Demo: https://avdaredevil.github.com/Duet-WebGL
+> Demo: https://avdaredevil.github.io/Duet-WebGL
 
 ## Features
 >
